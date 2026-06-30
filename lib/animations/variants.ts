@@ -79,3 +79,32 @@ export const backdrop: Variants = {
   visible: { opacity: 1, transition: { duration: DURATION.fast } },
   exit: { opacity: 0, transition: { duration: DURATION.fast } },
 };
+
+/* ------------------------------------------------------------------ *
+ * Phase 2 — Landing/Home
+ * ------------------------------------------------------------------ */
+
+/** Card lift on hover/focus. Pair with `whileHover="hover"` / `whileFocus="hover"`. */
+export const hoverLift: Variants = {
+  rest: { y: 0 },
+  hover: { y: -6, transition: SPRING.soft },
+};
+
+/** Media zoom inside a clipped frame — pair with a parent `overflow-hidden`. */
+export const mediaZoom: Variants = {
+  rest: { scale: 1 },
+  hover: { scale: 1.06, transition: { duration: DURATION.slow, ease: EASE.emphasized } },
+};
+
+/** Horizontal shake for inline validation errors (reused by auth in Phase 4). */
+export const shake: Variants = {
+  idle: { x: 0 },
+  error: { x: [0, -8, 8, -6, 6, -3, 3, 0], transition: { duration: 0.45, ease: EASE.standard } },
+};
+
+/** Single countdown digit rolling over — transform/opacity only. */
+export const countdownTick: Variants = {
+  initial: { opacity: 0, y: "-45%" },
+  animate: { opacity: 1, y: "0%", transition: { duration: DURATION.fast, ease: EASE.emphasized } },
+  exit: { opacity: 0, y: "45%", transition: { duration: DURATION.fast, ease: EASE.exit } },
+};

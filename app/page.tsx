@@ -1,41 +1,59 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
+
+import { Hero } from "@/components/home/hero";
+import { SectionSkeleton } from "@/components/home/section-skeleton";
 
 export const metadata: Metadata = {
   title: "Premium Gaming Gear",
 };
 
 /**
- * Placeholder home route. Exists so the shell renders and the sticky
- * blur-on-scroll header has content to scroll over. Phase 2 replaces this with
- * the real hero, category cards, product grid, flash deals, and newsletter.
+ * Home route — Server Component that composes the storefront sections.
+ *
+ * Hero is imported statically (above the fold). Every below-the-fold section is
+ * code-split with `next/dynamic`. Because this is an RSC we keep default SSR
+ * (no `ssr: false`, which Next 15 forbids here) and give each a height-reserving
+ * skeleton so the streamed chunk swaps in with zero layout shift.
+ *
+ * Render order: Hero, CategoryCards, FlashDeals, ProductGrid, BrandCarousel,
+ * Newsletter. The single page <h1> lives inside Hero.
  */
+
+const CategoryCards = dynamic(
+  () => import("@/components/home/category-cards").then((m) => m.CategoryCards),
+  { loading: () => <SectionSkeleton className="h-[520px]" /> },
+);
+
+const FlashDeals = dynamic(
+  () => import("@/components/home/flash-deals").then((m) => m.FlashDeals),
+  { loading: () => <SectionSkeleton className="h-[440px]" /> },
+);
+
+const ProductGrid = dynamic(
+  () => import("@/components/home/product-grid").then((m) => m.ProductGrid),
+  { loading: () => <SectionSkeleton className="h-[640px]" /> },
+);
+
+const BrandCarousel = dynamic(
+  () => import("@/components/home/brand-carousel").then((m) => m.BrandCarousel),
+  { loading: () => <SectionSkeleton className="h-[112px]" /> },
+);
+
+const Newsletter = dynamic(
+  () => import("@/components/home/newsletter").then((m) => m.Newsletter),
+  { loading: () => <SectionSkeleton className="h-[340px]" /> },
+);
+
 export default function HomePage() {
   return (
     <>
-      <section className="relative mx-auto flex min-h-[88dvh] max-w-7xl flex-col justify-center px-4 sm:px-6 lg:px-8">
-        <p className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-          Phase 1 · Foundation
-        </p>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
-          The motion foundation is live.
-        </h1>
-        <p className="mt-5 max-w-prose text-balance text-base text-muted-foreground sm:text-lg">
-          Sticky blur-on-scroll header, mega menu, mobile drawer, and the shared
-          variants + reduced-motion library are wired up. Scroll to watch the
-          header background fade in — opacity only, zero layout shift.
-        </p>
-      </section>
-
-      {/* Filler so the page scrolls; remove when Phase 2 lands. */}
-      <section className="mx-auto grid max-w-7xl gap-4 px-4 pb-24 sm:px-6 lg:px-8">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={index}
-            className="h-64 rounded-2xl border border-border/60 bg-card"
-            aria-hidden
-          />
-        ))}
-      </section>
+      <Hero />
+      <CategoryCards />
+      <FlashDeals />
+      <ProductGrid />
+      <BrandCarousel />
+      <Newsletter />
     </>
   );
 }
