@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import { Providers } from "./providers";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Footer } from "@/components/layout/footer";
+import { ConditionalChrome } from "@/components/layout/conditional-chrome";
 import "./globals.css";
 
 const inter = Inter({
@@ -75,15 +76,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
         <Providers>
-          <a
-            href="#main"
-            className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
+          <ConditionalChrome
+            header={
+              <>
+                <a
+                  href="#main"
+                  className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
+                >
+                  Skip to content
+                </a>
+                <SiteHeader />
+              </>
+            }
+            footer={<Footer />}
           >
-            Skip to content
-          </a>
-          <SiteHeader />
-          <main id="main">{children}</main>
-          <Footer />
+            {children}
+          </ConditionalChrome>
         </Providers>
       </body>
     </html>
