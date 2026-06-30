@@ -111,3 +111,105 @@ export function productSpecGroups(product: Product): SpecGroup[] {
     },
   ];
 }
+
+/* ------------------------------------------------------------------ *
+ * Phase 4 — search / filter / sort
+ * ------------------------------------------------------------------ */
+
+export type SortKey = "featured" | "price-asc" | "price-desc" | "rating";
+
+export interface ProductFilters {
+  categories: string[];
+  brands: string[];
+  /** Minor units; products priced above this are excluded (0 = no cap). */
+  maxPrice: number;
+  /** 0..5; products rated below this are excluded (0 = no minimum). */
+  minRating: number;
+  onSaleOnly: boolean;
+}
+
+export interface FacetValue {
+  value: string;
+  count: number;
+}
+
+export interface CatalogFacets {
+  categories: FacetValue[];
+  brands: FacetValue[];
+  priceMin: number;
+  priceMax: number;
+}
+
+export function getCatalogFacets(): CatalogFacets {
+  const categoryCounts = new Map<string, number>();
+  const brandCounts = new Map<string, number>();
+  let priceMin = Number.POSITIVE_INFINITY;
+  let priceMax = 0;
+  for (const product of ALL_PRODUCTS) {
+    categoryCounts.set(product.category, (categoryCounts.get(product.category) ?? 0) + 1);
+    brandCounts.set(product.brand, (brandCounts.get(product.brand) ?? 0) + 1);
+    priceMin = Math.min(priceMin, product.price);
+    priceMax = Math.max(priceMax, product.price);
+  }
+  const toFacets = (counts: Map<string, number>): FacetValue[] =>
+    [...counts.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => a.value.localeCompare(b.value));
+  return {
+    categories: toFacets(categoryCounts),
+    brands: toFacets(brandCounts),
+    priceMin: Number.isFinite(priceMin) ? priceMin : 0,
+    priceMax,
+  };
+}
+
+export function defaultFilters(facets: CatalogFacets): ProductFilters {
+  return { categories: [], brands: [], maxPrice: facets.priceMax, minRating: 0, onSaleOnly: false };
+}
+
+export function filterProducts(filters: ProductFilters): Product[] {
+  return ALL_PRODUCTS.filter((product) => {
+    if (filters.categories.length > 0 && !filters.categories.includes(product.category)) return false;
+    if (filters.brands.length > 0 && !filters.brands.includes(product.brand)) return false;
+    if (filters.maxPrice > 0 && product.price > filters.maxPrice) return false;
+    if (filters.minRating > 0 && product.rating < filters.minRating) return false;
+    if (filters.onSaleOnly && typeof product.compareAtPrice !== "number") return false;
+    return true;
+  });
+}
+
+export function sortProducts(products: Product[], sort: SortKey): Product[] {
+  const copy = [...products];
+  switch (sort) {
+    case "price-asc":
+      return copy.sort((a, b) => a.price - b.price);
+    case "price-desc":
+      return copy.sort((a, b) => b.price - a.price);
+    case "rating":
+      return copy.sort((a, b) => b.rating - a.rating);
+    case "featured":
+    default:
+      return copy;
+  }
+}
+
+/** Substring search over name/brand/category/specs. Empty query -> no results. */
+export function searchProducts(query: string, limit = 8): Product[] {
+  const needle = query.trim().toLowerCase();
+  if (needle.length === 0) return [];
+  const matches = ALL_PRODUCTS.filter((product) =>
+    [product.name, product.brand, product.category, ...product.specs]
+      .join(" ")
+      .toLowerCase()
+      .includes(needle),
+  );
+  return matches.slice(0, limit);
+}
+
+export const POPULAR_SEARCHES = [
+  "RTX 5090",
+  "Mechanical keyboard",
+  "OLED monitor",
+  "Wireless mouse",
+  "Gaming chair",
+];

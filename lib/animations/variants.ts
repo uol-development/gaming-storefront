@@ -145,3 +145,21 @@ export const popKey: Variants = {
   animate: { opacity: 1, scale: 1, y: 0, transition: SPRING.snappy },
   exit: { opacity: 0, scale: 0.6, y: -4, transition: { duration: DURATION.fast, ease: EASE.exit } },
 };
+
+/* ------------------------------------------------------------------ *
+ * Phase 4 — Cart + Search + Auth
+ * ------------------------------------------------------------------ */
+
+/** Left-side drawer panel (filters) — slides on the GPU-friendly `x` transform. */
+export const drawerPanelLeft: Variants = {
+  hidden: { x: "-100%" },
+  visible: { x: 0, transition: SPRING.snappy },
+  exit: { x: "-100%", transition: { duration: DURATION.base, ease: EASE.exit } },
+};
+
+/** Search overlay surface — descends from the top edge. */
+export const searchOverlay: Variants = {
+  hidden: { opacity: 0, y: -16 },
+  visible: { opacity: 1, y: 0, transition: { duration: DURATION.base, ease: EASE.emphasized } },
+  exit: { opacity: 0, y: -12, transition: { duration: DURATION.fast, ease: EASE.exit } },
+};

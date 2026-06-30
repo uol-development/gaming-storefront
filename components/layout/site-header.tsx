@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
-import { Heart, Search, ShoppingCart } from "lucide-react";
+import { Heart, Search, ShoppingCart, User } from "lucide-react";
 import { EASE, SPRING } from "@/lib/animations/tokens";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { useCartCount } from "@/lib/store/cart-store";
 import { useWishlistCount } from "@/lib/store/wishlist-store";
+import { useUiStore } from "@/lib/store/ui-store";
 import { CART_FLY_TARGET_ID } from "@/components/cart/fly-to-cart-layer";
 import { DesktopNav } from "./desktop-nav";
 import { MobileNav } from "./mobile-nav";
@@ -55,9 +56,8 @@ export function SiteHeader() {
         <DesktopNav items={NAV_ITEMS} className="ml-2 hidden lg:flex" />
 
         <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
-          <IconLink label="Search" href="/search">
-            <Search className="size-5" aria-hidden />
-          </IconLink>
+          <SearchButton />
+          <AccountButton />
           <WishlistButton />
           <CartButton />
           <MobileNav items={NAV_ITEMS} className="ml-1 lg:hidden" />
@@ -69,10 +69,29 @@ export function SiteHeader() {
 
 function CartButton() {
   const count = useCartCount();
+  const openCart = useUiStore((state) => state.openCart);
   return (
-    <IconLink label="Cart" href="/cart" count={count} id={CART_FLY_TARGET_ID}>
+    <IconButton label="Cart" onClick={openCart} count={count} id={CART_FLY_TARGET_ID}>
       <ShoppingCart className="size-5" aria-hidden />
-    </IconLink>
+    </IconButton>
+  );
+}
+
+function SearchButton() {
+  const openSearch = useUiStore((state) => state.openSearch);
+  return (
+    <IconButton label="Search" onClick={openSearch}>
+      <Search className="size-5" aria-hidden />
+    </IconButton>
+  );
+}
+
+function AccountButton() {
+  const openAuth = useUiStore((state) => state.openAuth);
+  return (
+    <IconButton label="Account" onClick={() => openAuth("login")}>
+      <User className="size-5" aria-hidden />
+    </IconButton>
   );
 }
 
@@ -108,6 +127,33 @@ function IconLink({
       {children}
       <CountBadge count={count} />
     </Link>
+  );
+}
+
+function IconButton({
+  label,
+  onClick,
+  count,
+  id,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  count?: number;
+  id?: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      id={id}
+      aria-label={count ? `${label}, ${count} item${count === 1 ? "" : "s"}` : label}
+      className="relative grid size-10 place-items-center rounded-md text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {children}
+      <CountBadge count={count} />
+    </button>
   );
 }
 
