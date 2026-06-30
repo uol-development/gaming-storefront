@@ -61,15 +61,30 @@ export function Hero() {
         {/* Atmospheric hero photo — sits behind the blobs/grid as the base
             layer. The section's background shows through if it loads slowly or
             fails (graceful, no broken box, no CLS). */}
-        <img
-          src={imageUrl(SECTION_IMAGE_IDS.hero, 1600)}
-          alt=""
-          aria-hidden
-          loading="eager"
-          decoding="async"
-          fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        {/* Reduced-motion users get the still poster; everyone else gets the loop. */}
+        {prefersReduced ? (
+          <img
+            src={imageUrl(SECTION_IMAGE_IDS.hero, 1600)}
+            alt=""
+            aria-hidden
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster={imageUrl(SECTION_IMAGE_IDS.hero, 1600)}
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
+          >
+            <source src="/hero.mp4" type="video/mp4" />
+          </video>
+        )}
         {/* Strong dark overlays keep the foreground copy/CTAs high-contrast. */}
         <div className="absolute inset-0 bg-background/70" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
