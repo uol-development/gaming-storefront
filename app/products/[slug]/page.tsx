@@ -9,7 +9,7 @@ import {
   productBlurb,
   productSpecGroups,
 } from "@/lib/data/catalog";
-import { formatCompact } from "@/lib/format";
+import { formatCompact, stockStatus } from "@/lib/format";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { SpecAccordion } from "@/components/product/spec-accordion";
 import { StickyBuyPanel } from "@/components/product/sticky-buy-panel";
@@ -42,9 +42,21 @@ export default async function ProductDetailPage({
   const product = getProductBySlug(slug);
   if (!product) notFound();
 
-  const blurb = productBlurb(product);
   const specGroups = productSpecGroups(product);
   const related = getRelatedProducts(product);
+  const availability = stockStatus(product.stock);
+  const availabilityDotClass =
+    availability.tone === "in"
+      ? "bg-emerald-400"
+      : availability.tone === "low"
+        ? "bg-amber-400"
+        : "bg-muted-foreground";
+  const availabilityTextClass =
+    availability.tone === "in"
+      ? "text-emerald-400"
+      : availability.tone === "low"
+        ? "text-amber-400"
+        : "text-muted-foreground";
 
   return (
     <main className="container mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-12">
@@ -86,7 +98,7 @@ export default async function ProductDetailPage({
           <ProductGallery product={product} />
 
           <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            {blurb}
+            {product.description}
           </p>
 
           {product.specs.length > 0 ? (
@@ -118,10 +130,19 @@ export default async function ProductDetailPage({
             <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               {product.name}
             </h1>
-            <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden />
-              <span className="font-medium text-foreground">{product.rating}</span>
-              <span>({formatCompact(product.reviews)} reviews)</span>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden />
+                <span className="font-medium text-foreground">{product.rating}</span>
+                <span>({formatCompact(product.reviews)} reviews)</span>
+              </div>
+              <div className={`flex items-center gap-1.5 font-medium ${availabilityTextClass}`}>
+                <span
+                  className={`size-2 shrink-0 rounded-full ${availabilityDotClass}`}
+                  aria-hidden
+                />
+                <span>{availability.label}</span>
+              </div>
             </div>
           </div>
 

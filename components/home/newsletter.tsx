@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { CheckCircle2 } from "lucide-react";
 import { scaleIn, shake } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
+import { imageUrl, SECTION_IMAGE_IDS } from "@/lib/data/images";
 import { cn } from "@/lib/utils";
 
 /**
@@ -57,18 +58,35 @@ export function Newsletter() {
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-      <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-gradient-to-br from-primary/15 to-accent/10 p-8 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-          Join the squad
-        </p>
-        <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          Drop in. Gear up.
-        </h2>
-        <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-          Early access to drops and members-only prices.
-        </p>
+      <div className="relative mx-auto max-w-2xl overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 to-accent/10 p-8 text-center">
+        {/* Atmospheric backdrop. Absolutely positioned (no CLS); the panel
+            gradient stays as the frame background so a slow/failed load is
+            graceful. A strong overlay keeps the form/text high-contrast. */}
+        <img
+          src={imageUrl(SECTION_IMAGE_IDS.flatlay, 1200)}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          decoding="async"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.07]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-background/85 via-background/75 to-background/85"
+        />
 
-        <div className="mt-6">
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+            Join the squad
+          </p>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+            Drop in. Gear up.
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+            Early access to drops and members-only prices.
+          </p>
+
+          <div className="mt-6">
           {isSuccess ? (
             <motion.div
               variants={variants(scaleIn)}
@@ -152,6 +170,7 @@ export function Newsletter() {
               </p>
             </form>
           )}
+          </div>
         </div>
       </div>
     </section>

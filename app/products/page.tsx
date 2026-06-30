@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { ProductBrowser } from "@/components/products/product-browser";
 
 export const metadata = { title: "All products" };
@@ -23,7 +25,9 @@ export default function ProductsPage() {
         </p>
       </div>
 
-      <ProductBrowser />
+      <Suspense fallback={<div className="min-h-[60vh]" />}>
+        <ProductBrowser />
+      </Suspense>
     </div>
   );
 }

@@ -55,7 +55,21 @@ export function ProductGallery({ product }: { product: Product }) {
                 active.gradient,
               )}
             >
-              <div className="flex flex-col items-center gap-3 text-foreground">
+              {/* Verified people-free CDN photo over the gradient fallback. A
+                  slow/failed load shows the gradient (no broken box, no CLS). */}
+              <img
+                src={active.image}
+                alt={`${product.name} - ${active.label}`}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              {/* Legibility scrim for the badge/label that sits over the image. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent"
+              />
+              <div className="relative flex flex-col items-center gap-3 text-foreground">
                 <span className="grid size-16 place-items-center rounded-2xl bg-background/40 backdrop-blur-sm">
                   <Gamepad2 className="size-8 text-foreground/80" aria-hidden />
                 </span>
@@ -89,8 +103,16 @@ export function ProductGallery({ product }: { product: Product }) {
                 isActive ? "opacity-100" : "opacity-70 hover:opacity-100",
               )}
             >
-              <span className="absolute inset-0 grid place-items-center">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+              {/* Same photo, small — gradient stays behind as graceful fallback. */}
+              <img
+                src={view.image}
+                alt={`${product.name} - ${view.label} thumbnail`}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <span className="absolute inset-0 grid place-items-center bg-gradient-to-t from-background/40 via-transparent to-transparent">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-foreground/90">
                   {view.label}
                 </span>
               </span>

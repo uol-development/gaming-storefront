@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
 import { BRANDS, type Brand } from "@/lib/data/brands";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
@@ -48,7 +49,7 @@ export function BrandCarousel() {
               <BrandCell key={brand.slug} brand={brand} />
             ))}
             {BRANDS.map((brand) => (
-              <BrandCell key={`dup-${brand.slug}`} brand={brand} aria-hidden />
+              <BrandCell key={`dup-${brand.slug}`} brand={brand} tabIndex={-1} aria-hidden />
             ))}
           </motion.div>
 
@@ -70,17 +71,25 @@ export function BrandCarousel() {
 function BrandCell({
   brand,
   className,
-  ...rest
-}: { brand: Brand; className?: string } & React.HTMLAttributes<HTMLSpanElement>) {
+  tabIndex,
+  "aria-hidden": ariaHidden,
+}: {
+  brand: Brand;
+  className?: string;
+  tabIndex?: number;
+  "aria-hidden"?: React.AriaAttributes["aria-hidden"];
+}) {
   return (
-    <span
+    <Link
+      href={`/products?brand=${encodeURIComponent(brand.name)}`}
+      tabIndex={tabIndex}
+      aria-hidden={ariaHidden}
       className={cn(
-        "grid h-full place-items-center whitespace-nowrap px-6 font-display text-lg text-muted-foreground transition-colors hover:text-foreground",
+        "grid h-full place-items-center whitespace-nowrap rounded-md px-6 font-display text-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
-      {...rest}
     >
       {brand.name}
-    </span>
+    </Link>
   );
 }

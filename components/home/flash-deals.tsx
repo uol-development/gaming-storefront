@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Zap } from "lucide-react";
 import { staggerContainer, staggerItem, countdownTick } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatPrice, discountPercent } from "@/lib/format";
+import { productImageUrl } from "@/lib/data/catalog";
 import { FLASH_DEALS, FLASH_SALE_DURATION_HOURS } from "@/lib/data/deals";
 
 /** Stable placeholder shown until the client mounts — keeps SSR === first client render. */
@@ -93,32 +95,48 @@ export function FlashDeals() {
 
             return (
               <motion.li key={deal.id} variants={variants(staggerItem)}>
-                <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50">
-                  <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary to-muted">
-                    {percent > 0 && (
-                      <span className="absolute left-2 top-2 rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-bold leading-none text-primary-foreground">
-                        -{percent}%
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-1 flex-col gap-1 p-3">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      {deal.brand}
-                    </p>
-                    <h3 className="line-clamp-1 text-sm font-medium text-foreground">{deal.name}</h3>
-                    <div className="mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
-                      <span className="text-sm font-bold text-foreground">
-                        {formatPrice(deal.price)}
-                      </span>
-                      {hasCompare && (
-                        <span className="text-xs text-muted-foreground line-through">
-                          {formatPrice(compareAt)}
+                <Link
+                  href={`/products/${deal.slug}`}
+                  className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors group-hover:border-primary/50">
+                    <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary to-muted">
+                      <img
+                        src={productImageUrl(deal, 400)}
+                        alt={deal.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent"
+                      />
+                      {percent > 0 && (
+                        <span className="absolute left-2 top-2 rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-bold leading-none text-primary-foreground">
+                          -{percent}%
                         </span>
                       )}
                     </div>
-                  </div>
-                </article>
+
+                    <div className="flex flex-1 flex-col gap-1 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {deal.brand}
+                      </p>
+                      <h3 className="line-clamp-1 text-sm font-medium text-foreground">{deal.name}</h3>
+                      <div className="mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
+                        <span className="text-sm font-bold text-foreground">
+                          {formatPrice(deal.price)}
+                        </span>
+                        {hasCompare && (
+                          <span className="text-xs text-muted-foreground line-through">
+                            {formatPrice(compareAt)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                </Link>
               </motion.li>
             );
           })}

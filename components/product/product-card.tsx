@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, Gamepad2, Heart, Plus, Search, ShoppingCart, Star } from "lucide-react";
+import { Check, Heart, Plus, Search, ShoppingCart, Star } from "lucide-react";
 import { hoverLift, mediaZoom, popKey } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
-import { formatCompact, formatPrice, discountPercent } from "@/lib/format";
+import { formatCompact, formatPrice, discountPercent, stockStatus } from "@/lib/format";
 import type { Product } from "@/lib/data/products";
-import { productGradient } from "@/lib/data/catalog";
+import { productGradient, productImageUrl } from "@/lib/data/catalog";
 import { useWishlistStore, useIsWishlisted } from "@/lib/store/wishlist-store";
 import { useQuickViewStore } from "@/lib/store/quick-view-store";
 import { useAddToCart } from "@/lib/hooks/use-add-to-cart";
@@ -30,7 +30,8 @@ export function ProductCard({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
 
   const gradient = productGradient(product);
-  const initials = brandInitials(product.brand);
+  const availability = stockStatus(product.stock);
+  const isOutOfStock = product.stock <= 0;
 
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const wishlisted = useIsWishlisted(product.id);
@@ -45,6 +46,7 @@ export function ProductCard({ product }: { product: Product }) {
   }, []);
 
   function handleAddToCart() {
+    if (isOutOfStock) return;
     const rect = mediaRef.current?.getBoundingClientRect();
     addToCart(product.id, rect ? { rect, gradient } : undefined);
 
@@ -75,21 +77,20 @@ export function ProductCard({ product }: { product: Product }) {
           gradient,
         )}
       >
-        <motion.div
-          variants={variants(mediaZoom)}
-          className="absolute inset-0 grid place-items-center"
-        >
-          {initials ? (
-            <span
-              aria-hidden
-              className="select-none font-display text-3xl font-bold tracking-tight text-foreground/40"
-            >
-              {initials}
-            </span>
-          ) : (
-            <Gamepad2 className="size-12 text-foreground/40" aria-hidden />
-          )}
+        <motion.div variants={variants(mediaZoom)} className="absolute inset-0">
+          <img
+            src={productImageUrl(product, 600)}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
         </motion.div>
+        {/* Legibility overlay for the badge/controls that sit over the image. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent"
+        />
       </div>
 
       {/* Overlay controls — OUTSIDE the body link to avoid nested interactives. */}
@@ -169,6 +170,21 @@ export function ProductCard({ product }: { product: Product }) {
           <span>({formatCompact(product.reviews)})</span>
         </div>
 
+        <div
+          className={cn(
+            "flex items-center gap-1.5 text-xs font-medium",
+            availability.tone === "in" && "text-emerald-400",
+            availability.tone === "low" && "text-amber-400",
+            availability.tone === "out" && "text-muted-foreground",
+          )}
+        >
+          <span
+            aria-hidden
+            className="size-1.5 rounded-full bg-current"
+          />
+          {availability.label}
+        </div>
+
         <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="text-base font-semibold text-foreground">
             {formatPrice(product.price)}
@@ -190,51 +206,47 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           type="button"
           onClick={handleAddToCart}
-          aria-label={`Add ${product.name} to cart`}
-          className="mt-auto inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+          disabled={isOutOfStock}
+          aria-label={isOutOfStock ? `${product.name} is out of stock` : `Add ${product.name} to cart`}
+          className="mt-auto inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:hover:bg-muted"
         >
-          <AnimatePresence mode="wait" initial={false}>
-            {added ? (
-              <motion.span
-                key="added"
-                variants={variants(popKey)}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="inline-flex items-center gap-2"
-              >
-                <Check className="size-4" aria-hidden />
-                Added
-              </motion.span>
-            ) : (
-              <motion.span
-                key="add"
-                variants={variants(popKey)}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="inline-flex items-center gap-2"
-              >
-                <ShoppingCart className="size-4" aria-hidden />
-                Add to cart
-                <Plus className="size-4 opacity-70" aria-hidden />
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {isOutOfStock ? (
+            <span className="inline-flex items-center gap-2">
+              <ShoppingCart className="size-4" aria-hidden />
+              Out of stock
+            </span>
+          ) : (
+            <AnimatePresence mode="wait" initial={false}>
+              {added ? (
+                <motion.span
+                  key="added"
+                  variants={variants(popKey)}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="inline-flex items-center gap-2"
+                >
+                  <Check className="size-4" aria-hidden />
+                  Added
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="add"
+                  variants={variants(popKey)}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  className="inline-flex items-center gap-2"
+                >
+                  <ShoppingCart className="size-4" aria-hidden />
+                  Add to cart
+                  <Plus className="size-4 opacity-70" aria-hidden />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          )}
         </button>
       </div>
     </motion.article>
   );
-}
-
-/** First two word-initials of a brand, uppercased (e.g. "ASUS ROG" -> "AR"). */
-function brandInitials(brand: string): string {
-  const letters = brand
-    .split(/\s+/)
-    .map((word) => word.charAt(0))
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  return letters;
 }

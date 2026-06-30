@@ -8,7 +8,7 @@ import { backdrop, crossfade, modalPanel } from "@/lib/animations/variants";
 import { SPRING } from "@/lib/animations/tokens";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
-import { discountPercent, formatCompact, formatPrice } from "@/lib/format";
+import { discountPercent, formatCompact, formatPrice, stockStatus } from "@/lib/format";
 import { getProductById, productGallery, productGradient } from "@/lib/data/catalog";
 import { type Product } from "@/lib/data/products";
 import { useQuickViewStore } from "@/lib/store/quick-view-store";
@@ -148,6 +148,21 @@ function QuickViewContent({
   const discount =
     compareAtPrice !== undefined ? discountPercent(product.price, compareAtPrice) : 0;
 
+  const availability = stockStatus(product.stock);
+  const outOfStock = availability.tone === "out";
+  const availabilityDot =
+    availability.tone === "in"
+      ? "bg-emerald-400"
+      : availability.tone === "low"
+        ? "bg-amber-400"
+        : "bg-muted-foreground";
+  const availabilityText =
+    availability.tone === "in"
+      ? "text-emerald-400"
+      : availability.tone === "low"
+        ? "text-amber-400"
+        : "text-muted-foreground";
+
   return (
     <div className="fixed inset-0 z-[70] grid place-items-center p-4">
       {/* Backdrop — opacity only; clicking it dismisses. */}
@@ -197,11 +212,20 @@ function QuickViewContent({
                   animate="center"
                   exit="exit"
                   className={cn(
-                    "grid h-full w-full place-items-center bg-gradient-to-br",
+                    "absolute inset-0 grid place-items-center bg-gradient-to-br",
                     activeGradient,
                   )}
                 >
-                  <span className="font-display text-sm font-semibold uppercase tracking-widest text-foreground/50">
+                  {activeView?.image ? (
+                    <img
+                      src={activeView.image}
+                      alt={`${product.name} — ${activeView.label} view`}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : null}
+                  <span className="relative font-display text-sm font-semibold uppercase tracking-widest text-foreground/50">
                     {activeView?.label ?? product.name}
                   </span>
                 </motion.div>
@@ -226,6 +250,15 @@ function QuickViewContent({
                         : "border-border hover:border-foreground/30",
                     )}
                   >
+                    {view.image ? (
+                      <img
+                        src={view.image}
+                        alt={`${product.name} ${view.label} thumbnail`}
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : null}
                     <span className="sr-only">{view.label}</span>
                   </button>
                 );
@@ -265,6 +298,19 @@ function QuickViewContent({
               ) : null}
             </div>
 
+            <p
+              className={cn(
+                "mt-3 flex items-center gap-2 text-sm font-medium",
+                availabilityText,
+              )}
+            >
+              <span
+                className={cn("size-2 shrink-0 rounded-full", availabilityDot)}
+                aria-hidden
+              />
+              {availability.label}
+            </p>
+
             {product.specs.length > 0 ? (
               <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
                 {product.specs.map((spec) => (
@@ -283,9 +329,12 @@ function QuickViewContent({
               <button
                 type="button"
                 onClick={onAddToCart}
-                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                disabled={outOfStock}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:hover:bg-muted"
               >
-                {added ? (
+                {outOfStock ? (
+                  "Out of stock"
+                ) : added ? (
                   <>
                     <Check className="size-4" aria-hidden />
                     Added to cart

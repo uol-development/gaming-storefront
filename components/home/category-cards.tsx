@@ -18,6 +18,7 @@ import { hoverLift, staggerContainer, staggerItem } from "@/lib/animations/varia
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatCompact } from "@/lib/format";
+import { categoryImageUrl } from "@/lib/data/catalog";
 import { CATEGORIES, type CategoryIcon } from "@/lib/data/categories";
 
 /**
@@ -73,13 +74,26 @@ export function CategoryCards() {
                 whileFocus="hover"
               >
                 <Link
-                  href={category.href}
+                  href={`/products?category=${category.slug}`}
                   className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
+                  <img
+                    src={categoryImageUrl(category.slug)}
+                    alt={`${category.name} gear`}
+                    loading="lazy"
+                    decoding="async"
+                    className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                  />
+
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/90 via-background/60 to-background/30"
+                  />
+
                   <span
                     aria-hidden
                     className={cn(
-                      "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-80",
+                      "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-50 mix-blend-multiply",
                       category.gradient,
                     )}
                   />

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Providers } from "./providers";
 import { SiteHeader } from "@/components/layout/site-header";
+import { Footer } from "@/components/layout/footer";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </a>
           <SiteHeader />
           <main id="main">{children}</main>
+          <Footer />
         </Providers>
       </body>
     </html>

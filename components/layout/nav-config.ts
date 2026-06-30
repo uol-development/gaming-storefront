@@ -22,100 +22,100 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   {
     label: "Laptops",
-    href: "/laptops",
+    href: "/products?category=laptops",
     columns: [
       {
         heading: "By use",
         items: [
-          { label: "Esports", href: "/laptops/esports" },
-          { label: "Creator", href: "/laptops/creator" },
-          { label: "Ultraportable", href: "/laptops/ultraportable" },
+          { label: "Esports", href: "/products?category=laptops" },
+          { label: "Creator", href: "/products?category=laptops" },
+          { label: "Ultraportable", href: "/products?category=laptops" },
         ],
       },
       {
         heading: "By GPU",
         items: [
-          { label: "RTX 5090", href: "/laptops/rtx-5090" },
-          { label: "RTX 5080", href: "/laptops/rtx-5080" },
-          { label: "RTX 5070", href: "/laptops/rtx-5070" },
+          { label: "RTX 5090", href: "/products?category=laptops" },
+          { label: "RTX 5080", href: "/products?category=laptops" },
+          { label: "RTX 5070", href: "/products?category=laptops" },
         ],
       },
       {
         heading: "Brands",
         items: [
-          { label: "ASUS ROG", href: "/brands/asus-rog" },
-          { label: "Razer", href: "/brands/razer" },
-          { label: "Lenovo Legion", href: "/brands/legion" },
+          { label: "ASUS ROG", href: `/products?brand=${encodeURIComponent("ASUS ROG")}` },
+          { label: "Razer", href: `/products?brand=${encodeURIComponent("Razer")}` },
+          { label: "Lenovo Legion", href: `/products?brand=${encodeURIComponent("Lenovo Legion")}` },
         ],
       },
     ],
   },
   {
     label: "Desktops",
-    href: "/desktops",
+    href: "/products?category=desktops",
     columns: [
       {
         heading: "Prebuilt",
         items: [
-          { label: "Entry rigs", href: "/desktops/entry" },
-          { label: "Mid-tier", href: "/desktops/mid" },
-          { label: "Flagship", href: "/desktops/flagship" },
+          { label: "Entry rigs", href: "/products?category=desktops" },
+          { label: "Mid-tier", href: "/products?category=desktops" },
+          { label: "Flagship", href: "/products?category=desktops" },
         ],
       },
       {
         heading: "Custom",
         items: [
-          { label: "PC Builder", href: "/builder" },
-          { label: "Liquid-cooled", href: "/desktops/liquid" },
-          { label: "Small form factor", href: "/desktops/sff" },
+          { label: "PC Builder", href: "/products" },
+          { label: "Liquid-cooled", href: "/products?category=desktops" },
+          { label: "Small form factor", href: "/products?category=desktops" },
         ],
       },
     ],
   },
   {
     label: "Components",
-    href: "/components",
+    href: "/products",
     columns: [
       {
         heading: "Core",
         items: [
-          { label: "Graphics cards", href: "/components/gpus" },
-          { label: "Processors", href: "/components/cpus" },
-          { label: "Motherboards", href: "/components/motherboards" },
+          { label: "Graphics cards", href: "/products?category=gpus" },
+          { label: "Processors", href: "/products" },
+          { label: "Motherboards", href: "/products" },
         ],
       },
       {
         heading: "Memory & storage",
         items: [
-          { label: "RAM", href: "/components/ram" },
-          { label: "NVMe SSDs", href: "/components/ssds" },
-          { label: "Cooling", href: "/components/cooling" },
+          { label: "RAM", href: "/products" },
+          { label: "NVMe SSDs", href: "/products?category=ssds" },
+          { label: "Cooling", href: "/products" },
         ],
       },
     ],
   },
   {
     label: "Peripherals",
-    href: "/peripherals",
+    href: "/products",
     columns: [
       {
         heading: "Input",
         items: [
-          { label: "Keyboards", href: "/peripherals/keyboards" },
-          { label: "Mice", href: "/peripherals/mice" },
-          { label: "Controllers", href: "/peripherals/controllers" },
+          { label: "Keyboards", href: "/products?category=keyboards" },
+          { label: "Mice", href: "/products?category=mice" },
+          { label: "Controllers", href: "/products" },
         ],
       },
       {
         heading: "Audio & video",
         items: [
-          { label: "Headsets", href: "/peripherals/headsets" },
-          { label: "Monitors", href: "/monitors" },
-          { label: "Webcams", href: "/peripherals/webcams" },
+          { label: "Headsets", href: "/products?category=headsets" },
+          { label: "Monitors", href: "/products?category=monitors" },
+          { label: "Webcams", href: "/products" },
         ],
       },
     ],
   },
-  { label: "Chairs", href: "/chairs" },
-  { label: "Deals", href: "/deals" },
+  { label: "Chairs", href: "/products?category=chairs" },
+  { label: "Deals", href: "/products?sale=1" },
 ];

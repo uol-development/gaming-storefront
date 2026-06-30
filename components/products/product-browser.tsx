@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/animations/variants";
@@ -12,6 +13,7 @@ import {
   filterProducts,
   getCatalogFacets,
   sortProducts,
+  type CatalogFacets,
   type ProductFilters,
   type SortKey,
 } from "@/lib/data/catalog";
@@ -37,11 +39,59 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "rating", label: "Top rated" },
 ];
 
+/**
+ * Build the initial filter state from URL query params, falling back to the
+ * defaults for anything unset. Only known facet values are honored so a bad
+ * `?category=` / `?brand=` never produces an empty, un-clearable result set.
+ *
+ * Recognized: `category` -> categories=[value], `brand` -> brands=[value]
+ * (URL-decoded), `sale=1` -> onSaleOnly. The PLP page is responsible for
+ * wrapping this component in <Suspense> because it reads useSearchParams.
+ */
+function filtersFromParams(
+  params: URLSearchParams,
+  facets: CatalogFacets,
+): ProductFilters {
+  const base = defaultFilters(facets);
+
+  const category = params.get("category");
+  if (category && facets.categories.some((facet) => facet.value === category)) {
+    base.categories = [category];
+  }
+
+  const brandParam = params.get("brand");
+  if (brandParam) {
+    const brand = decodeURIComponent(brandParam);
+    if (facets.brands.some((facet) => facet.value === brand)) {
+      base.brands = [brand];
+    }
+  }
+
+  if (params.get("sale") === "1") {
+    base.onSaleOnly = true;
+  }
+
+  return base;
+}
+
 export function ProductBrowser() {
   const facets = useMemo(() => getCatalogFacets(), []);
-  const [filters, setFilters] = useState<ProductFilters>(() => defaultFilters(facets));
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<ProductFilters>(() =>
+    filtersFromParams(new URLSearchParams(searchParams.toString()), facets),
+  );
   const [sort, setSort] = useState<SortKey>("featured");
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Re-apply URL-derived filters only when the relevant params actually change,
+  // so user edits made between navigations aren't clobbered on unrelated renders.
+  const appliedParamsRef = useRef<string>(searchParams.toString());
+  useEffect(() => {
+    const next = searchParams.toString();
+    if (next === appliedParamsRef.current) return;
+    appliedParamsRef.current = next;
+    setFilters(filtersFromParams(new URLSearchParams(next), facets));
+  }, [searchParams, facets]);
 
   const { variants } = useReducedMotion();
 

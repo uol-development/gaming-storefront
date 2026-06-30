@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
-import { getProductById, productGradient } from "@/lib/data/catalog";
+import { getProductById, productGradient, productImageUrl } from "@/lib/data/catalog";
 import { useCartStore } from "@/lib/store/cart-store";
 
 /**
@@ -25,6 +25,7 @@ interface SummaryRow {
   name: string;
   quantity: number;
   gradient: string;
+  image: string;
   lineTotal: number;
 }
 
@@ -44,6 +45,7 @@ export function OrderSummary() {
         name: product.name,
         quantity: line.quantity,
         gradient: productGradient(product),
+        image: productImageUrl(product, 160),
         lineTotal,
       });
     }
@@ -70,12 +72,19 @@ export function OrderSummary() {
           {rows.map((row) => (
             <li key={row.id} className="flex items-center gap-3">
               <span
-                aria-hidden
                 className={cn(
-                  "size-10 shrink-0 rounded-lg border border-border/60 bg-gradient-to-br",
+                  "relative size-10 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-gradient-to-br",
                   row.gradient,
                 )}
-              />
+              >
+                <img
+                  src={row.image}
+                  alt={row.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-1 text-sm font-medium text-foreground">{row.name}</p>
                 <p className="text-xs text-muted-foreground">Qty {row.quantity}</p>

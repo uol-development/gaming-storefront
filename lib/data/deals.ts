@@ -19,7 +19,10 @@ export const FLASH_DEALS: Product[] = [
     rating: 4.8,
     reviews: 1442,
     badge: "Sale",
-    specs: ["27\" OLED", "240Hz", "0.03ms"],
+    specs: ['27" OLED', "240Hz", "0.03ms"],
+    description:
+      "A 27-inch 1440p OLED tuned for esports: 240Hz, 0.03ms, and a custom heatsink for burn-in protection. Inky blacks and instant pixel response in a desk-friendly size.",
+    stock: 5,
   },
   {
     id: "d-002",
@@ -33,6 +36,9 @@ export const FLASH_DEALS: Product[] = [
     reviews: 2890,
     badge: "Sale",
     specs: ["OPX optical", "8000Hz", "PBT keycaps"],
+    description:
+      "A tournament-grade full-size board with OPX optical switches, an 8000Hz polling rate, and durable double-shot PBT keycaps. Tournament switch locks out distractions mid-match.",
+    stock: 18,
   },
   {
     id: "d-003",
@@ -46,6 +52,9 @@ export const FLASH_DEALS: Product[] = [
     reviews: 1755,
     badge: "Sale",
     specs: ["120h battery", "53mm drivers", "2.4GHz + BT"],
+    description:
+      "Marathon-friendly comfort with a 120-hour battery, angled 53mm drivers, and a crisp 10-bit mic. Connect over low-latency 2.4GHz or switch to Bluetooth on the move.",
+    stock: 22,
   },
   {
     id: "d-004",
@@ -59,6 +68,9 @@ export const FLASH_DEALS: Product[] = [
     reviews: 6120,
     badge: "Sale",
     specs: ["PCIe 4.0", "7300MB/s", "Game Mode 2.0"],
+    description:
+      "Cut load screens to a blink with sequential reads up to 7,300MB/s. Game Mode 2.0 predictively loads assets, and an optional heatsink keeps thermals in check during long sessions.",
+    stock: 40,
   },
   {
     id: "d-005",
@@ -72,6 +84,9 @@ export const FLASH_DEALS: Product[] = [
     reviews: 980,
     badge: "Sale",
     specs: ["NEO Hybrid leather", "4D armrests", "Magnetic head pillow"],
+    description:
+      "All-day support engineered around a built-in lumbar system, 4D armrests, and pebble-seat-base ergonomics. Wrapped in cool, scratch-resistant NEO Hybrid leatherette.",
+    stock: 3,
   },
   {
     id: "d-006",
@@ -85,5 +100,8 @@ export const FLASH_DEALS: Product[] = [
     reviews: 4310,
     badge: "Sale",
     specs: ["HERO 25K", "LIGHTFORCE", "13 controls"],
+    description:
+      "The icon, evolved: LIGHTFORCE hybrid switches, a 25K HERO sensor, and 13 programmable controls with LIGHTSYNC RGB. Heavy on features, light on the mousepad.",
+    stock: 16,
   },
 ];

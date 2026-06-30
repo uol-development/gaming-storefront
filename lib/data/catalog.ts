@@ -1,5 +1,6 @@
 import { FEATURED_PRODUCTS, type Product } from "./products";
 import { FLASH_DEALS } from "./deals";
+import { categoryImageIds, imageUrl, productGalleryIds, productImageId } from "./images";
 
 /**
  * Aggregated catalog over the Phase-2 mock sources. Replace the source arrays
@@ -57,17 +58,32 @@ export function productGradient(product: Product): string {
 export interface GalleryView {
   id: string;
   label: string;
+  /** Brand gradient — rendered behind the image as graceful fallback. */
   gradient: string;
+  /** Verified, people-free CDN photo for this view. */
+  image: string;
 }
 
-/** Four placeholder "angles" for the gallery, derived from the product. */
+/** Four gallery "angles" for a product, each a verified photo over its gradient. */
 export function productGallery(product: Product): GalleryView[] {
   const base = productGradient(product);
-  return ["Front", "Angle", "Detail", "Ports"].map((label, index) => ({
+  const ids = productGalleryIds(product.slug, product.category);
+  return ["Front", "Angle", "Detail", "In use"].map((label, index) => ({
     id: `${product.slug}-${index}`,
     label,
     gradient: base,
+    image: imageUrl(ids[index] ?? ids[0] ?? "", 900),
   }));
+}
+
+/** Primary product photo (cards, cart, search, summary). */
+export function productImageUrl(product: Product, width = 800): string {
+  return imageUrl(productImageId(product.slug, product.category), width);
+}
+
+/** Lead photo for a category card. */
+export function categoryImageUrl(category: string, width = 800): string {
+  return imageUrl(categoryImageIds(category)[0] ?? "", width);
 }
 
 /** Short marketing blurb composed from the product's own fields. */

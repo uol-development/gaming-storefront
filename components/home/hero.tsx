@@ -6,15 +6,19 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { RotateCcw, ShieldCheck, Truck, type LucideIcon } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
+import { imageUrl, SECTION_IMAGE_IDS } from "@/lib/data/images";
 import { cn } from "@/lib/utils";
 
 /**
  * Top-of-page hero. Owns the single page <h1>.
  *
- * The decorative background (blurred blobs + grid) lives in an aria-hidden,
- * pointer-events-none layer behind the content. A scroll-linked parallax drifts
- * that layer on the GPU-friendly `y` transform only — and is switched OFF
- * entirely under reduced motion (rendered static, no `style={{ y }}`).
+ * The decorative background (atmospheric photo + blurred blobs + grid) lives in
+ * an aria-hidden, pointer-events-none layer behind the content. A scroll-linked
+ * parallax drifts that layer on the GPU-friendly `y` transform only — and is
+ * switched OFF entirely under reduced motion (rendered static, no `style={{ y }}`).
+ * Strong dark overlays sit on top of the photo so the headline/CTAs keep high
+ * contrast; the photo loads over the existing background so a slow/failed load
+ * degrades gracefully with no broken box and no layout shift.
  *
  * Foreground content reveals via the shared stagger variants. Layout reserves a
  * fixed min-height up front so nothing reflows as the content animates in
@@ -54,6 +58,22 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={prefersReduced ? undefined : { y }}
       >
+        {/* Atmospheric hero photo — sits behind the blobs/grid as the base
+            layer. The section's background shows through if it loads slowly or
+            fails (graceful, no broken box, no CLS). */}
+        <img
+          src={imageUrl(SECTION_IMAGE_IDS.hero, 1600)}
+          alt=""
+          aria-hidden
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Strong dark overlays keep the foreground copy/CTAs high-contrast. */}
+        <div className="absolute inset-0 bg-background/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
+
         {/* Soft blurred radial blobs. */}
         <div className="absolute -left-24 -top-24 size-[36rem] rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute -right-32 top-1/4 size-[32rem] rounded-full bg-accent/20 blur-3xl" />
@@ -100,14 +120,14 @@ export function Hero() {
           className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center"
         >
           <Link
-            href="/deals"
-            className="inline-flex w-full items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+            href="/products?sale=1"
+            className="inline-flex w-full items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
           >
             Shop the deals
           </Link>
           <Link
-            href="/builder"
-            className="inline-flex w-full items-center justify-center rounded-md border border-border bg-transparent px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+            href="/products?category=desktops"
+            className="inline-flex w-full items-center justify-center rounded-md border border-border bg-transparent px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-secondary active:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
           >
             Build your PC
           </Link>

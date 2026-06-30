@@ -1,12 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, Heart, Minus, Plus, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import {
+  Check,
+  Heart,
+  Minus,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  Truck,
+  Zap,
+} from "lucide-react";
 import { popKey } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
-import { discountPercent, formatPrice } from "@/lib/format";
+import { discountPercent, formatPrice, stockStatus, type StockTone } from "@/lib/format";
 import type { Product } from "@/lib/data/products";
 import { productGradient } from "@/lib/data/catalog";
 import { useIsWishlisted, useWishlistStore } from "@/lib/store/wishlist-store";
@@ -19,6 +29,18 @@ interface StickyBuyPanelProps {
 const ADDED_FEEDBACK_MS = 1100;
 const MAX_QUANTITY = 99;
 
+const STOCK_DOT: Record<StockTone, string> = {
+  in: "bg-emerald-400",
+  low: "bg-amber-400",
+  out: "bg-muted-foreground",
+};
+
+const STOCK_TEXT: Record<StockTone, string> = {
+  in: "text-emerald-400",
+  low: "text-amber-400",
+  out: "text-muted-foreground",
+};
+
 /**
  * PDP purchase panel. Renders two coordinated surfaces — a desktop sticky card
  * and a fixed mobile bar — sharing the same quantity state and handlers. The
@@ -29,6 +51,7 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
+  const router = useRouter();
   const { prefersReduced } = useReducedMotion();
   const addToCart = useAddToCart();
   const toggleWishlist = useWishlistStore((state) => state.toggle);
@@ -41,6 +64,9 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
   const hasDiscount =
     typeof product.compareAtPrice === "number" && product.compareAtPrice > product.price;
   const discount = hasDiscount ? discountPercent(product.price, product.compareAtPrice ?? 0) : 0;
+
+  const status = stockStatus(product.stock);
+  const outOfStock = product.stock === 0;
 
   useEffect(() => {
     return () => {
@@ -57,6 +83,7 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
   }, []);
 
   const handleAdd = useCallback(() => {
+    if (outOfStock) return;
     const rect = swatchRef.current?.getBoundingClientRect();
     addToCart(product.id, rect ? { rect, gradient } : undefined, quantity);
 
@@ -66,7 +93,13 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
       setAdded(false);
       feedbackTimer.current = null;
     }, ADDED_FEEDBACK_MS);
-  }, [addToCart, gradient, product.id, quantity]);
+  }, [addToCart, gradient, outOfStock, product.id, quantity]);
+
+  const handleBuyNow = useCallback(() => {
+    if (outOfStock) return;
+    addToCart(product.id, undefined, quantity);
+    router.push("/checkout");
+  }, [addToCart, outOfStock, product.id, quantity, router]);
 
   return (
     <>
@@ -103,6 +136,8 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
           </div>
         </div>
 
+        <AvailabilityRow status={status} />
+
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-medium text-foreground">Quantity</span>
           <Stepper
@@ -113,7 +148,22 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
           />
         </div>
 
-        <AddToCartButton added={added} prefersReduced={prefersReduced} onClick={handleAdd} />
+        <AddToCartButton
+          added={added}
+          outOfStock={outOfStock}
+          prefersReduced={prefersReduced}
+          onClick={handleAdd}
+        />
+
+        <button
+          type="button"
+          onClick={handleBuyNow}
+          disabled={outOfStock}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+        >
+          <Zap className="size-4" aria-hidden />
+          {outOfStock ? "Out of stock" : "Buy now"}
+        </button>
 
         <button
           type="button"
@@ -141,10 +191,12 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
           <span className="text-base font-bold leading-tight tracking-tight text-foreground">
             {formatPrice(product.price)}
           </span>
-          {hasDiscount && (
+          {hasDiscount ? (
             <span className="text-xs text-muted-foreground line-through leading-tight">
               {formatPrice(product.compareAtPrice ?? 0)}
             </span>
+          ) : (
+            <AvailabilityRow status={status} compact />
           )}
         </div>
 
@@ -158,12 +210,43 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
 
         <AddToCartButton
           added={added}
+          outOfStock={outOfStock}
           prefersReduced={prefersReduced}
           onClick={handleAdd}
           className="ml-auto flex-1 px-3"
         />
       </div>
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Availability row (dot + label)
+ * ------------------------------------------------------------------ */
+
+function AvailabilityRow({
+  status,
+  compact = false,
+}: {
+  status: { tone: StockTone; label: string };
+  compact?: boolean;
+}) {
+  return (
+    <div className={cn("flex items-center gap-1.5", compact ? "leading-tight" : "")}>
+      <span
+        aria-hidden
+        className={cn("inline-block size-2 shrink-0 rounded-full", STOCK_DOT[status.tone])}
+      />
+      <span
+        className={cn(
+          "font-medium",
+          compact ? "text-xs" : "text-sm",
+          STOCK_TEXT[status.tone],
+        )}
+      >
+        {status.label}
+      </span>
+    </div>
   );
 }
 
@@ -255,12 +338,30 @@ function StepperButton({ label, onClick, disabled, compact, children }: StepperB
 
 interface AddToCartButtonProps {
   added: boolean;
+  outOfStock: boolean;
   prefersReduced: boolean;
   onClick: () => void;
   className?: string;
 }
 
-function AddToCartButton({ added, prefersReduced, onClick, className }: AddToCartButtonProps) {
+function AddToCartButton({ added, outOfStock, prefersReduced, onClick, className }: AddToCartButtonProps) {
+  if (outOfStock) {
+    return (
+      <button
+        type="button"
+        disabled
+        aria-disabled
+        className={cn(
+          "grid h-11 place-items-center rounded-xl bg-secondary px-4 text-sm font-semibold text-muted-foreground lg:w-full",
+          "cursor-not-allowed",
+          className,
+        )}
+      >
+        Out of stock
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"

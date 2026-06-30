@@ -8,7 +8,7 @@ import { backdrop, drawerPanel, popKey, scaleIn } from "@/lib/animations/variant
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
-import { getProductById, productGradient } from "@/lib/data/catalog";
+import { getProductById, productGradient, productImageUrl } from "@/lib/data/catalog";
 import type { Product } from "@/lib/data/products";
 import { useUiStore } from "@/lib/store/ui-store";
 import { useCartStore } from "@/lib/store/cart-store";
@@ -126,14 +126,21 @@ export function CartDrawer() {
                         exit={prefersReduced ? { opacity: 0 } : { opacity: 0, x: 24 }}
                         className="flex gap-3 rounded-xl border border-border bg-card p-3"
                       >
-                        {/* Thumbnail — fixed size, no CLS. */}
+                        {/* Thumbnail — fixed size, no CLS. Image over gradient fallback. */}
                         <div
-                          aria-hidden
                           className={cn(
-                            "size-16 shrink-0 rounded-lg border border-border bg-gradient-to-br",
+                            "relative size-16 shrink-0 overflow-hidden rounded-lg border border-border bg-gradient-to-br",
                             productGradient(product),
                           )}
-                        />
+                        >
+                          <img
+                            src={productImageUrl(product, 160)}
+                            alt={product.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        </div>
 
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <div className="flex items-start justify-between gap-2">

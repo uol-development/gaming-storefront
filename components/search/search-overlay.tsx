@@ -10,7 +10,7 @@ import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/lib/data/products";
-import { productGradient, searchProducts, POPULAR_SEARCHES } from "@/lib/data/catalog";
+import { productGradient, productImageUrl, searchProducts, POPULAR_SEARCHES } from "@/lib/data/catalog";
 import { useUiStore } from "@/lib/store/ui-store";
 
 /**
@@ -254,12 +254,19 @@ export function SearchOverlay() {
                           )}
                         >
                           <span
-                            aria-hidden
                             className={cn(
-                              "size-12 shrink-0 rounded-md border border-border bg-gradient-to-br",
+                              "relative size-12 shrink-0 overflow-hidden rounded-md border border-border bg-gradient-to-br",
                               productGradient(product),
                             )}
-                          />
+                          >
+                            <img
+                              src={productImageUrl(product, 160)}
+                              alt={product.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                          </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium text-foreground">
                               {product.name}
