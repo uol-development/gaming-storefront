@@ -163,3 +163,37 @@ export const searchOverlay: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: DURATION.base, ease: EASE.emphasized } },
   exit: { opacity: 0, y: -12, transition: { duration: DURATION.fast, ease: EASE.exit } },
 };
+
+/* ------------------------------------------------------------------ *
+ * Phase 5 — Checkout + micro-interaction library
+ * ------------------------------------------------------------------ */
+
+/** Toast enter/exit — rises from the bottom edge. */
+export const toast: Variants = {
+  hidden: { opacity: 0, y: 16, scale: 0.96 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: SPRING.soft },
+  exit: { opacity: 0, y: 8, scale: 0.96, transition: { duration: DURATION.fast, ease: EASE.exit } },
+};
+
+/** Tooltip — quick fade + tiny scale from the anchor. */
+export const tooltip: Variants = {
+  hidden: { opacity: 0, scale: 0.92, y: 4 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.14, ease: EASE.emphasized } },
+  exit: { opacity: 0, scale: 0.96, y: 2, transition: { duration: 0.1, ease: EASE.exit } },
+};
+
+/**
+ * Direction-aware step transition for the checkout wizard. `custom` is the
+ * navigation direction (+1 forward, -1 back). NOTE: these are function variants,
+ * so the reduced-motion helper passes them through unchanged — the consumer must
+ * fall back to an opacity-only `fade` when prefersReduced.
+ */
+export const stepSlide: Variants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir >= 0 ? 40 : -40 }),
+  center: { opacity: 1, x: 0, transition: { duration: DURATION.base, ease: EASE.emphasized } },
+  exit: (dir: number) => ({
+    opacity: 0,
+    x: dir >= 0 ? -40 : 40,
+    transition: { duration: DURATION.fast, ease: EASE.exit },
+  }),
+};

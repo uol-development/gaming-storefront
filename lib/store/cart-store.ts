@@ -1,9 +1,12 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 /**
- * Cart store. Phase 3 adds real line mutations so add-to-cart updates the header
- * badge and drives the fly animation. Persistence + the cart drawer arrive in
- * Phase 4 (kept in-memory here to avoid SSR/hydration handling for now).
+ * Cart store. Persisted to localStorage so the cart survives a refresh (e.g. on
+ * /checkout). `skipHydration` keeps SSR/static-export output deterministic
+ * (server + first client render both start empty); `Providers` calls
+ * `useCartStore.persist.rehydrate()` in an effect after mount to avoid any
+ * hydration mismatch.
  */
 export interface CartLine {
   productId: string;
@@ -18,33 +21,46 @@ interface CartState {
   clear: () => void;
 }
 
-export const useCartStore = create<CartState>((set) => ({
-  lines: [],
-  addItem: (productId, quantity = 1) =>
-    set((state) => {
-      const existing = state.lines.find((line) => line.productId === productId);
-      if (existing) {
-        return {
-          lines: state.lines.map((line) =>
-            line.productId === productId ? { ...line, quantity: line.quantity + quantity } : line,
-          ),
-        };
-      }
-      return { lines: [...state.lines, { productId, quantity }] };
+export const useCartStore = create<CartState>()(
+  persist(
+    (set) => ({
+      lines: [],
+      addItem: (productId, quantity = 1) =>
+        set((state) => {
+          const existing = state.lines.find((line) => line.productId === productId);
+          if (existing) {
+            return {
+              lines: state.lines.map((line) =>
+                line.productId === productId
+                  ? { ...line, quantity: line.quantity + quantity }
+                  : line,
+              ),
+            };
+          }
+          return { lines: [...state.lines, { productId, quantity }] };
+        }),
+      removeItem: (productId) =>
+        set((state) => ({ lines: state.lines.filter((line) => line.productId !== productId) })),
+      setQuantity: (productId, quantity) =>
+        set((state) => ({
+          lines:
+            quantity <= 0
+              ? state.lines.filter((line) => line.productId !== productId)
+              : state.lines.map((line) =>
+                  line.productId === productId ? { ...line, quantity } : line,
+                ),
+        })),
+      clear: () => set({ lines: [] }),
     }),
-  removeItem: (productId) =>
-    set((state) => ({ lines: state.lines.filter((line) => line.productId !== productId) })),
-  setQuantity: (productId, quantity) =>
-    set((state) => ({
-      lines:
-        quantity <= 0
-          ? state.lines.filter((line) => line.productId !== productId)
-          : state.lines.map((line) =>
-              line.productId === productId ? { ...line, quantity } : line,
-            ),
-    })),
-  clear: () => set({ lines: [] }),
-}));
+    {
+      name: "nexus-cart",
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ lines: state.lines }),
+      skipHydration: true,
+    },
+  ),
+);
 
 /** Total item count for the header badge (subscribe to the number, not the array). */
 export const useCartCount = () =>
@@ -52,6 +68,4 @@ export const useCartCount = () =>
 
 /** Quantity of a single product currently in the cart (0 if absent). */
 export const useCartQuantity = (productId: string) =>
-  useCartStore(
-    (state) => state.lines.find((line) => line.productId === productId)?.quantity ?? 0,
-  );
+  useCartStore((state) => state.lines.find((line) => line.productId === productId)?.quantity ?? 0);

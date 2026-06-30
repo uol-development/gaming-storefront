@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useCartStore } from "@/lib/store/cart-store";
 import { FlyToCartLayer } from "@/components/cart/fly-to-cart-layer";
 import { QuickView } from "@/components/product/quick-view";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { SearchOverlay } from "@/components/search/search-overlay";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { Toaster } from "@/components/ui/toaster";
 
 /**
  * Client-side providers. Kept as a leaf wrapper so the root layout stays a
@@ -31,6 +33,12 @@ export function Providers({ children }: { children: ReactNode }) {
       }),
   );
 
+  // Persisted cart uses skipHydration to keep SSR/export deterministic — rehydrate
+  // from localStorage once on the client to avoid a hydration mismatch.
+  useEffect(() => {
+    void useCartStore.persist.rehydrate();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {children}
@@ -39,6 +47,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <CartDrawer />
       <SearchOverlay />
       <AuthModal />
+      <Toaster />
     </QueryClientProvider>
   );
 }
