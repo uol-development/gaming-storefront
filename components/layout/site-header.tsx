@@ -8,6 +8,7 @@ import { EASE, SPRING } from "@/lib/animations/tokens";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { useCartCount } from "@/lib/store/cart-store";
 import { useWishlistCount } from "@/lib/store/wishlist-store";
+import { CART_FLY_TARGET_ID } from "@/components/cart/fly-to-cart-layer";
 import { DesktopNav } from "./desktop-nav";
 import { MobileNav } from "./mobile-nav";
 import { NAV_ITEMS } from "./nav-config";
@@ -69,7 +70,7 @@ export function SiteHeader() {
 function CartButton() {
   const count = useCartCount();
   return (
-    <IconLink label="Cart" href="/cart" count={count}>
+    <IconLink label="Cart" href="/cart" count={count} id={CART_FLY_TARGET_ID}>
       <ShoppingCart className="size-5" aria-hidden />
     </IconLink>
   );
@@ -88,16 +89,19 @@ function IconLink({
   label,
   href,
   count,
+  id,
   children,
 }: {
   label: string;
   href: string;
   count?: number;
+  id?: string;
   children: ReactNode;
 }) {
   return (
     <Link
       href={href}
+      id={id}
       aria-label={count ? `${label}, ${count} item${count === 1 ? "" : "s"}` : label}
       className="relative grid size-10 place-items-center rounded-md text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >

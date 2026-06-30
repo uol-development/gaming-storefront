@@ -108,3 +108,40 @@ export const countdownTick: Variants = {
   animate: { opacity: 1, y: "0%", transition: { duration: DURATION.fast, ease: EASE.emphasized } },
   exit: { opacity: 0, y: "45%", transition: { duration: DURATION.fast, ease: EASE.exit } },
 };
+
+/* ------------------------------------------------------------------ *
+ * Phase 3 — Product card + Product detail page
+ * ------------------------------------------------------------------ */
+
+/** Centered dialog / quick-view panel. */
+export const modalPanel: Variants = {
+  hidden: { opacity: 0, scale: 0.96, y: 8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: DURATION.base, ease: EASE.emphasized },
+  },
+  exit: { opacity: 0, scale: 0.98, y: 8, transition: { duration: DURATION.fast, ease: EASE.exit } },
+};
+
+/** Crossfade for swapping the gallery's active image (paired with AnimatePresence). */
+export const crossfade: Variants = {
+  enter: { opacity: 0, scale: 1.03 },
+  center: { opacity: 1, scale: 1, transition: { duration: DURATION.base, ease: EASE.emphasized } },
+  exit: { opacity: 0, scale: 1, transition: { duration: DURATION.fast, ease: EASE.exit } },
+};
+
+/** Accordion panel inner reveal — sibling reposition is done with Motion `layout`. */
+export const accordionContent: Variants = {
+  hidden: { opacity: 0, y: -4 },
+  visible: { opacity: 1, y: 0, transition: { duration: DURATION.fast, ease: EASE.emphasized } },
+  exit: { opacity: 0, y: -4, transition: { duration: DURATION.fast, ease: EASE.exit } },
+};
+
+/** Quick "pop" for a value change (quantity stepper, in-cart confirmation). */
+export const popKey: Variants = {
+  initial: { opacity: 0, scale: 0.6, y: 4 },
+  animate: { opacity: 1, scale: 1, y: 0, transition: SPRING.snappy },
+  exit: { opacity: 0, scale: 0.6, y: -4, transition: { duration: DURATION.fast, ease: EASE.exit } },
+};

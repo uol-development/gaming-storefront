@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { FlyToCartLayer } from "@/components/cart/fly-to-cart-layer";
+import { QuickView } from "@/components/product/quick-view";
 
 /**
  * Client-side providers. Kept as a leaf wrapper so the root layout stays a
@@ -26,5 +28,11 @@ export function Providers({ children }: { children: ReactNode }) {
       }),
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <FlyToCartLayer />
+      <QuickView />
+    </QueryClientProvider>
+  );
 }
