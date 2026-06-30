@@ -57,7 +57,10 @@ export function Newsletter() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+    <section
+      id="newsletter"
+      className="mx-auto w-full max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
+    >
       <div className="relative mx-auto max-w-2xl overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 to-accent/10 p-8 text-center">
         {/* Atmospheric backdrop. Absolutely positioned (no CLS); the panel
             gradient stays as the frame background so a slow/failed load is

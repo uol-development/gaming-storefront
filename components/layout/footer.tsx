@@ -5,9 +5,10 @@ import { Github, Instagram, Twitch, Twitter, Youtube, type LucideIcon } from "lu
  * Site footer. A static, server-rendered surface — no client state or motion is
  * needed, so this stays a Server Component (zero JS shipped). Every internal
  * link follows the no-404 convention: category/shop links resolve to the PLP at
- * `/products` with query params it understands; placeholder/marketing links use
- * "#". Layout is a fixed multi-column grid that collapses to a single stacked
- * column on mobile, so nothing reflows after hydration (no CLS).
+ * `/products` with query params it understands; support/company/legal links
+ * resolve to real content routes; social links point to external profiles.
+ * Layout is a fixed multi-column grid that collapses to a single stacked column
+ * on mobile, so nothing reflows after hydration (no CLS).
  */
 
 interface FooterLink {
@@ -36,38 +37,38 @@ const SHOP_LINKS: FooterColumn = {
 const SUPPORT_LINKS: FooterColumn = {
   heading: "Support",
   links: [
-    { label: "Help center", href: "#" },
-    { label: "Shipping", href: "#" },
-    { label: "Returns", href: "#" },
-    { label: "Warranty", href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "Help center", href: "/support" },
+    { label: "Shipping", href: "/shipping" },
+    { label: "Returns", href: "/returns" },
+    { label: "Warranty", href: "/warranty" },
+    { label: "Contact", href: "/contact" },
   ],
 };
 
 const COMPANY_LINKS: FooterColumn = {
   heading: "Company",
   links: [
-    { label: "About", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Sustainability", href: "#" },
+    { label: "About", href: "/about" },
+    { label: "Careers", href: "/careers" },
+    { label: "Blog", href: "/blog" },
+    { label: "Sustainability", href: "/about" },
   ],
 };
 
 const LINK_COLUMNS: FooterColumn[] = [SHOP_LINKS, SUPPORT_LINKS, COMPANY_LINKS];
 
-const SOCIAL_LINKS: { label: string; icon: LucideIcon }[] = [
-  { label: "NEXUS on Twitter", icon: Twitter },
-  { label: "NEXUS on YouTube", icon: Youtube },
-  { label: "NEXUS on Twitch", icon: Twitch },
-  { label: "NEXUS on Instagram", icon: Instagram },
-  { label: "NEXUS on GitHub", icon: Github },
+const SOCIAL_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
+  { label: "NEXUS on Twitter", href: "https://twitter.com", icon: Twitter },
+  { label: "NEXUS on YouTube", href: "https://www.youtube.com", icon: Youtube },
+  { label: "NEXUS on Twitch", href: "https://www.twitch.tv", icon: Twitch },
+  { label: "NEXUS on Instagram", href: "https://www.instagram.com", icon: Instagram },
+  { label: "NEXUS on GitHub", href: "https://github.com", icon: Github },
 ];
 
 const LEGAL_LINKS: FooterLink[] = [
-  { label: "Privacy", href: "#" },
-  { label: "Terms", href: "#" },
-  { label: "Cookies", href: "#" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
+  { label: "Cookies", href: "/cookies" },
 ];
 
 const PAYMENT_METHODS = ["Visa", "Mastercard", "Amex", "PayPal", "Apple Pay"] as const;
@@ -99,10 +100,12 @@ export function Footer() {
             </p>
 
             <ul className="mt-6 flex items-center gap-2">
-              {SOCIAL_LINKS.map(({ label, icon: Icon }) => (
+              {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
                 <li key={label}>
                   <a
-                    href="#"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={label}
                     className="grid size-9 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >

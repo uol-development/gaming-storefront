@@ -17,8 +17,10 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+const SITE_URL = "https://gaming-storefront-eight.vercel.app";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nexus.example.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "NEXUS — Premium Gaming Gear",
     template: "%s · NEXUS",
@@ -32,6 +34,32 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "NEXUS",
+      url: SITE_URL,
+      description:
+        "Premium gaming laptops, custom PCs, GPUs, monitors, and pro peripherals.",
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: "NEXUS",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${SITE_URL}/products?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -42,6 +70,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-dvh bg-background text-foreground antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
         <Providers>
           <a
             href="#main"
