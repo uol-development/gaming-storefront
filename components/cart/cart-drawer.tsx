@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Minus, PackageOpen, Plus, ShoppingBag, Trash2, Truck, X } from "lucide-react";
 import { backdrop, drawerPanel, popKey, scaleIn } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
-import { getProductById, productGradient, productImageUrl } from "@/lib/data/catalog";
+import { productGradient, productImageUrl } from "@/lib/data/catalog";
+import { getStoreProductsByIdsAction } from "@/lib/data/store-actions";
 import type { Product } from "@/lib/data/products";
 import { useUiStore } from "@/lib/store/ui-store";
 import { useCartStore } from "@/lib/store/cart-store";
@@ -38,6 +39,10 @@ export function CartDrawer() {
   const { prefersReduced, variants } = useReducedMotion();
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  // Live products resolved by id from the DB, keyed by product id.
+  const [productMap, setProductMap] = useState<Record<string, Product>>({});
+  const [resolving, setResolving] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
@@ -55,14 +60,52 @@ export function CartDrawer() {
     };
   }, [open, close]);
 
-  // Resolve each line to a real product (skip ids no longer in the catalog).
+  // Batch-resolve the cart lines to live products. Keyed on the set of ids so it
+  // re-runs only when the cart contents change. A `cancelled` flag drops stale
+  // responses (e.g. quick edits) so we never apply an out-of-date map.
+  const lineIds = lines.map((line) => line.productId).join(",");
+  useEffect(() => {
+    const ids = lineIds ? lineIds.split(",") : [];
+    if (ids.length === 0) {
+      setProductMap({});
+      setResolving(false);
+      return;
+    }
+
+    let cancelled = false;
+    setResolving(true);
+    getStoreProductsByIdsAction(ids)
+      .then((products) => {
+        if (cancelled) return;
+        const next: Record<string, Product> = {};
+        for (const product of products) next[product.id] = product;
+        setProductMap(next);
+      })
+      .finally(() => {
+        if (!cancelled) setResolving(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lineIds]);
+
+  // Resolve each line to a live product (skip ids not yet resolved / no longer
+  // in the catalog), preserving cart order.
   const resolved: ResolvedLine[] = lines.reduce<ResolvedLine[]>((acc, line) => {
-    const product = getProductById(line.productId);
+    const product = productMap[line.productId];
     if (product) acc.push({ product, quantity: line.quantity });
     return acc;
   }, []);
 
-  const itemCount = resolved.reduce((total, { quantity }) => total + quantity, 0);
+  // Lines exist but none have resolved yet -> first load of the DB products.
+  const isLoading = resolving && resolved.length === 0 && lines.length > 0;
+
+  // While the first resolve is in flight, fall back to the raw cart quantity so
+  // the header doesn't flash "0 items" before the products load in.
+  const itemCount = isLoading
+    ? lines.reduce((total, line) => total + line.quantity, 0)
+    : resolved.reduce((total, { quantity }) => total + quantity, 0);
   const subtotal = resolved.reduce(
     (total, { product, quantity }) => total + product.price * quantity,
     0,
@@ -116,7 +159,23 @@ export function CartDrawer() {
 
             {/* BODY */}
             <div className="flex-1 overflow-y-auto overscroll-contain">
-              {hasItems ? (
+              {isLoading ? (
+                <ul className="flex flex-col gap-3 p-4" aria-busy="true" aria-label="Loading cart">
+                  {lines.map((line) => (
+                    <li
+                      key={line.productId}
+                      className="flex animate-pulse gap-3 rounded-xl border border-border bg-card p-3"
+                    >
+                      <div className="size-16 shrink-0 rounded-lg border border-border bg-secondary" />
+                      <div className="flex min-w-0 flex-1 flex-col gap-2 py-1">
+                        <div className="h-4 w-3/4 rounded bg-secondary" />
+                        <div className="h-3 w-1/3 rounded bg-secondary" />
+                        <div className="mt-auto h-8 w-24 rounded bg-secondary" />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : hasItems ? (
                 <ul className="flex flex-col gap-3 p-4">
                   <AnimatePresence initial={false}>
                     {resolved.map(({ product, quantity }) => (

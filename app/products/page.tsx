@@ -1,15 +1,22 @@
 import { Suspense } from "react";
 
 import { ProductBrowser } from "@/components/products/product-browser";
+import { getStoreProducts } from "@/lib/data/store";
 
 export const metadata = { title: "All products" };
+
+// Read the live catalog on every request so /admin edits surface immediately.
+export const dynamic = "force-dynamic";
 
 /**
  * Product-listing page (PLP). Server Component shell: a static heading block
  * followed by <ProductBrowser />, which is a Client Component that owns its own
- * data, filter/sort state, and the staggered product grid.
+ * filter/sort state and the staggered product grid. The catalog is read from the
+ * DB here on the server and handed to the browser as props.
  */
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const products = await getStoreProducts();
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 space-y-2">
@@ -26,7 +33,7 @@ export default function ProductsPage() {
       </div>
 
       <Suspense fallback={<div className="min-h-[60vh]" />}>
-        <ProductBrowser />
+        <ProductBrowser products={products} />
       </Suspense>
     </div>
   );

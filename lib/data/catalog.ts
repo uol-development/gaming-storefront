@@ -72,13 +72,15 @@ export function productGallery(product: Product): GalleryView[] {
     id: `${product.slug}-${index}`,
     label,
     gradient: base,
-    image: imageUrl(ids[index] ?? ids[0] ?? "", 900),
+    // A real uploaded image leads; the other angles use generated photos.
+    image:
+      index === 0 && product.image ? product.image : imageUrl(ids[index] ?? ids[0] ?? "", 900),
   }));
 }
 
-/** Primary product photo (cards, cart, search, summary). */
+/** Primary product photo (cards, cart, search, summary). Prefers an uploaded image. */
 export function productImageUrl(product: Product, width = 800): string {
-  return imageUrl(productImageId(product.slug, product.category), width);
+  return product.image ?? imageUrl(productImageId(product.slug, product.category), width);
 }
 
 /** Lead photo for a category card. */
@@ -156,12 +158,12 @@ export interface CatalogFacets {
   priceMax: number;
 }
 
-export function getCatalogFacets(): CatalogFacets {
+export function getCatalogFacets(products: Product[] = ALL_PRODUCTS): CatalogFacets {
   const categoryCounts = new Map<string, number>();
   const brandCounts = new Map<string, number>();
   let priceMin = Number.POSITIVE_INFINITY;
   let priceMax = 0;
-  for (const product of ALL_PRODUCTS) {
+  for (const product of products) {
     categoryCounts.set(product.category, (categoryCounts.get(product.category) ?? 0) + 1);
     brandCounts.set(product.brand, (brandCounts.get(product.brand) ?? 0) + 1);
     priceMin = Math.min(priceMin, product.price);
@@ -183,8 +185,11 @@ export function defaultFilters(facets: CatalogFacets): ProductFilters {
   return { categories: [], brands: [], maxPrice: facets.priceMax, minRating: 0, onSaleOnly: false };
 }
 
-export function filterProducts(filters: ProductFilters): Product[] {
-  return ALL_PRODUCTS.filter((product) => {
+export function filterProducts(
+  filters: ProductFilters,
+  products: Product[] = ALL_PRODUCTS,
+): Product[] {
+  return products.filter((product) => {
     if (filters.categories.length > 0 && !filters.categories.includes(product.category)) return false;
     if (filters.brands.length > 0 && !filters.brands.includes(product.brand)) return false;
     if (filters.maxPrice > 0 && product.price > filters.maxPrice) return false;

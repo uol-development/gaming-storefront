@@ -1,15 +1,14 @@
 import type { MetadataRoute } from "next";
-import { getAllProductSlugs } from "@/lib/data/catalog";
+import { getStoreProductSlugs } from "@/lib/data/store";
 
 /**
- * Static sitemap (emitted as /sitemap.xml). Canonical host is Vercel (primary).
+ * Sitemap (emitted as /sitemap.xml). Canonical host is Vercel (primary).
+ * Product entries are sourced from the live Supabase catalog.
  */
 const SITE_URL = "https://gaming-storefront-eight.vercel.app";
 const LAST_MODIFIED = "2026-06-30";
 
-export const dynamic = "force-static";
-
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",
     "/products",
@@ -35,7 +34,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route === "" ? 1 : 0.6,
   }));
 
-  const productEntries: MetadataRoute.Sitemap = getAllProductSlugs().map((slug) => ({
+  const slugs = await getStoreProductSlugs();
+
+  const productEntries: MetadataRoute.Sitemap = slugs.map((slug) => ({
     url: SITE_URL + "/products/" + slug,
     lastModified: LAST_MODIFIED,
     changeFrequency: "weekly",

@@ -9,7 +9,8 @@ import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { productImageUrl } from "@/lib/data/catalog";
-import { FLASH_DEALS, FLASH_SALE_DURATION_HOURS } from "@/lib/data/deals";
+import type { Product } from "@/lib/data/products";
+import { FLASH_SALE_DURATION_HOURS } from "@/lib/data/deals";
 
 /** Stable placeholder shown until the client mounts — keeps SSR === first client render. */
 const PLACEHOLDER = "--";
@@ -25,7 +26,7 @@ function pad2(value: number): string {
  * HH:MM:SS digit rolls vertically on change via AnimatePresence — transform +
  * opacity only, inside a fixed-size clipped box so there is zero layout shift.
  */
-export function FlashDeals() {
+export function FlashDeals({ deals }: { deals: Product[] }) {
   const { prefersReduced, variants } = useReducedMotion();
 
   const [mounted, setMounted] = useState(false);
@@ -56,6 +57,9 @@ export function FlashDeals() {
   const hh = mounted ? pad2(hours) : PLACEHOLDER;
   const mm = mounted ? pad2(minutes) : PLACEHOLDER;
   const ss = mounted ? pad2(seconds) : PLACEHOLDER;
+
+  // No live flash deals -> hide the whole section.
+  if (deals.length === 0) return null;
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
@@ -88,7 +92,7 @@ export function FlashDeals() {
           viewport={{ once: true, margin: "-80px" }}
           className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
         >
-          {FLASH_DEALS.map((deal) => {
+          {deals.map((deal) => {
             const compareAt = deal.compareAtPrice;
             const hasCompare = typeof compareAt === "number" && compareAt > deal.price;
             const percent = hasCompare ? discountPercent(deal.price, compareAt) : 0;

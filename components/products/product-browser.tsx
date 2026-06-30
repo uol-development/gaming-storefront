@@ -17,6 +17,7 @@ import {
   type ProductFilters,
   type SortKey,
 } from "@/lib/data/catalog";
+import type { Product } from "@/lib/data/products";
 import { ProductCard } from "@/components/product/product-card";
 import { FilterDrawer } from "@/components/products/filter-drawer";
 
@@ -74,8 +75,8 @@ function filtersFromParams(
   return base;
 }
 
-export function ProductBrowser() {
-  const facets = useMemo(() => getCatalogFacets(), []);
+export function ProductBrowser({ products }: { products: Product[] }) {
+  const facets = useMemo(() => getCatalogFacets(products), [products]);
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<ProductFilters>(() =>
     filtersFromParams(new URLSearchParams(searchParams.toString()), facets),
@@ -96,8 +97,8 @@ export function ProductBrowser() {
   const { variants } = useReducedMotion();
 
   const results = useMemo(
-    () => sortProducts(filterProducts(filters), sort),
-    [filters, sort],
+    () => sortProducts(filterProducts(filters, products), sort),
+    [filters, sort, products],
   );
 
   const resetFilters = (): void => setFilters(defaultFilters(facets));

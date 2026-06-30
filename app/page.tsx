@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 
 import { Hero } from "@/components/home/hero";
 import { SectionSkeleton } from "@/components/home/section-skeleton";
+import { getStoreProducts } from "@/lib/data/store";
 
 export const metadata: Metadata = {
   title: "Premium Gaming Gear",
@@ -18,6 +19,10 @@ export const metadata: Metadata = {
  *
  * Render order: Hero, CategoryCards, FlashDeals, ProductGrid, BrandCarousel,
  * Newsletter. The single page <h1> lives inside Hero.
+ *
+ * Catalog data is read live from Supabase via the server-only data layer. The
+ * `await getStoreProducts()` call opts this route out of static rendering, so
+ * the page always reflects the current published catalog from /admin.
  */
 
 const CategoryCards = dynamic(
@@ -45,13 +50,19 @@ const Newsletter = dynamic(
   { loading: () => <SectionSkeleton className="h-[340px]" /> },
 );
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await getStoreProducts();
+  const featured = products.slice(0, 8);
+  const deals = products
+    .filter((p) => typeof p.compareAtPrice === "number")
+    .slice(0, 6);
+
   return (
     <>
       <Hero />
       <CategoryCards />
-      <FlashDeals />
-      <ProductGrid />
+      <FlashDeals deals={deals} />
+      <ProductGrid products={featured} />
       <BrandCarousel />
       <Newsletter />
     </>

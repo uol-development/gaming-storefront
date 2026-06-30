@@ -1,15 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
-import { getProductById, productGradient, productImageUrl } from "@/lib/data/catalog";
+import { productGradient, productImageUrl } from "@/lib/data/catalog";
+import { getStoreProductsByIdsAction } from "@/lib/data/store-actions";
+import type { Product } from "@/lib/data/products";
 import { useCartStore } from "@/lib/store/cart-store";
 
 /**
  * Checkout order-totals card. Reads the cart store, resolves each line to a real
- * product (skipping any stale/unknown id), and renders the item list plus the
- * subtotal / shipping / tax / total breakdown. No props — it owns its own data.
+ * product from the live catalog (skipping any stale/unknown id), and renders the
+ * item list plus the subtotal / shipping / tax / total breakdown. No props — it
+ * owns its own data.
+ *
+ * Resolution runs through the server action `getStoreProductsByIdsAction`
+ * (client components never touch the server-only data layer directly). A
+ * cancelled flag guards against stale results when the cart lines change.
  *
  * Money is in integer minor units throughout; format only at the edge with
  * `formatPrice`. Static layout (no Motion) so there is zero CLS as totals change.
@@ -32,25 +39,61 @@ interface SummaryRow {
 export function OrderSummary() {
   const lines = useCartStore((s) => s.lines);
 
+  // Resolved products keyed by id. `null` = not yet loaded (loading state).
+  const [productsById, setProductsById] = useState<Map<string, Product> | null>(null);
+
+  // Stable key for the effect: only re-resolve when the set of ids changes.
+  const idsKey = useMemo(
+    () => lines.map((line) => line.productId).join(","),
+    [lines],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const ids = idsKey.length > 0 ? idsKey.split(",") : [];
+
+    if (ids.length === 0) {
+      setProductsById(new Map());
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void getStoreProductsByIdsAction(ids).then((products) => {
+      if (cancelled) return;
+      const map = new Map<string, Product>();
+      for (const product of products) map.set(product.id, product);
+      setProductsById(map);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
+
+  const loading = productsById === null;
+
   const { rows, subtotal } = useMemo(() => {
     const resolved: SummaryRow[] = [];
     let sum = 0;
-    for (const line of lines) {
-      const product = getProductById(line.productId);
-      if (!product) continue;
-      const lineTotal = product.price * line.quantity;
-      sum += lineTotal;
-      resolved.push({
-        id: product.id,
-        name: product.name,
-        quantity: line.quantity,
-        gradient: productGradient(product),
-        image: productImageUrl(product, 160),
-        lineTotal,
-      });
+    if (productsById) {
+      for (const line of lines) {
+        const product = productsById.get(line.productId);
+        if (!product) continue;
+        const lineTotal = product.price * line.quantity;
+        sum += lineTotal;
+        resolved.push({
+          id: product.id,
+          name: product.name,
+          quantity: line.quantity,
+          gradient: productGradient(product),
+          image: productImageUrl(product, 160),
+          lineTotal,
+        });
+      }
     }
     return { rows: resolved, subtotal: sum };
-  }, [lines]);
+  }, [lines, productsById]);
 
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
   const tax = Math.round(subtotal * TAX_RATE);
@@ -65,7 +108,11 @@ export function OrderSummary() {
         Order summary
       </h2>
 
-      {rows.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          Loading items…
+        </p>
+      ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">No items yet</p>
       ) : (
         <ul className="space-y-3">

@@ -10,7 +10,8 @@ import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/lib/data/products";
-import { productGradient, productImageUrl, searchProducts, POPULAR_SEARCHES } from "@/lib/data/catalog";
+import { productGradient, productImageUrl, POPULAR_SEARCHES } from "@/lib/data/catalog";
+import { searchStoreProductsAction } from "@/lib/data/store-actions";
 import { useUiStore } from "@/lib/store/ui-store";
 
 /**
@@ -50,8 +51,9 @@ export function SearchOverlay() {
     return () => clearTimeout(handle);
   }, [query]);
 
-  // Resolve the debounced query. Empty -> clear results; non-empty -> show the
-  // skeleton, then a short simulated delay (~250ms) sets the results.
+  // Resolve the debounced query against the live catalog. Empty -> clear
+  // results; non-empty -> show the skeleton, then await the server action.
+  // A `cancelled` flag discards stale results from a superseded query.
   useEffect(() => {
     const trimmed = debouncedQuery.trim();
     if (trimmed.length === 0) {
@@ -61,14 +63,20 @@ export function SearchOverlay() {
       return;
     }
 
+    let cancelled = false;
     setSearching(true);
-    const handle = setTimeout(() => {
-      setResults(searchProducts(trimmed, MAX_RESULTS));
+
+    void (async () => {
+      const found = await searchStoreProductsAction(trimmed, MAX_RESULTS);
+      if (cancelled) return;
+      setResults(found);
       setSearching(false);
       setActiveIndex(-1);
-    }, 250);
+    })();
 
-    return () => clearTimeout(handle);
+    return () => {
+      cancelled = true;
+    };
   }, [debouncedQuery]);
 
   // Lock body scroll, focus the input, and wire Escape while open. Reset all

@@ -9,7 +9,8 @@ import { SPRING } from "@/lib/animations/tokens";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { discountPercent, formatCompact, formatPrice, stockStatus } from "@/lib/format";
-import { getProductById, productGallery, productGradient } from "@/lib/data/catalog";
+import { productGallery, productGradient } from "@/lib/data/catalog";
+import { getStoreProductByIdAction } from "@/lib/data/store-actions";
 import { type Product } from "@/lib/data/products";
 import { useQuickViewStore } from "@/lib/store/quick-view-store";
 import { useWishlistStore, useIsWishlisted } from "@/lib/store/wishlist-store";
@@ -26,7 +27,10 @@ import { useAddToCart } from "@/lib/hooks/use-add-to-cart";
 export function QuickView() {
   const productId = useQuickViewStore((state) => state.productId);
   const close = useQuickViewStore((state) => state.close);
-  const product = productId ? getProductById(productId) : undefined;
+
+  // The active product is resolved from the live catalog via a server action.
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -40,12 +44,39 @@ export function QuickView() {
   const [selected, setSelected] = useState(0);
   const [added, setAdded] = useState(false);
 
-  const open = product !== undefined;
+  // The modal is "open" the moment a card requests an id — we show a loading
+  // panel while the product resolves, then swap in the resolved content.
+  const open = productId !== null;
 
   // Reset the active gallery view + the "added" flash each time a product opens.
   useEffect(() => {
     setSelected(0);
     setAdded(false);
+  }, [productId]);
+
+  // Resolve the requested product from the live catalog. Guard stale responses
+  // with a cancelled flag, and clear the product when nothing is requested.
+  useEffect(() => {
+    if (productId === null) {
+      setProduct(null);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setProduct(null);
+
+    void (async () => {
+      const p = await getStoreProductByIdAction(productId);
+      if (cancelled) return;
+      setProduct(p);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [productId]);
 
   // Lock body scroll + wire Escape while the modal is open; restore on cleanup.
@@ -81,27 +112,117 @@ export function QuickView() {
 
   return (
     <AnimatePresence>
-      {product ? (
-        <QuickViewContent
-          key={product.id}
-          product={product}
-          titleId={titleId}
-          selected={selected}
-          onSelect={setSelected}
-          added={added}
-          wishlisted={wishlisted}
-          onToggleWishlist={() => toggleWishlist(product.id)}
-          onAddToCart={handleAddToCart}
-          onClose={close}
-          closeRef={closeRef}
-          mediaRef={mediaRef}
-          prefersReduced={prefersReduced}
-          backdropVariants={variants(backdrop)}
-          panelVariants={variants(modalPanel)}
-          crossfadeVariants={variants(crossfade)}
-        />
+      {open ? (
+        product ? (
+          <QuickViewContent
+            key={product.id}
+            product={product}
+            titleId={titleId}
+            selected={selected}
+            onSelect={setSelected}
+            added={added}
+            wishlisted={wishlisted}
+            onToggleWishlist={() => toggleWishlist(product.id)}
+            onAddToCart={handleAddToCart}
+            onClose={close}
+            closeRef={closeRef}
+            mediaRef={mediaRef}
+            prefersReduced={prefersReduced}
+            backdropVariants={variants(backdrop)}
+            panelVariants={variants(modalPanel)}
+            crossfadeVariants={variants(crossfade)}
+          />
+        ) : (
+          <QuickViewShell
+            key="quick-view-status"
+            titleId={titleId}
+            loading={loading}
+            onClose={close}
+            closeRef={closeRef}
+            backdropVariants={variants(backdrop)}
+            panelVariants={variants(modalPanel)}
+          />
+        )
       ) : null}
     </AnimatePresence>
+  );
+}
+
+/**
+ * Lightweight modal shell shown while the product resolves (or if it could not
+ * be found). Mirrors the real panel's backdrop, close control, and dialog
+ * semantics so focus/Escape/scroll-lock behaviour is identical during the fetch.
+ */
+function QuickViewShell({
+  titleId,
+  loading,
+  onClose,
+  closeRef,
+  backdropVariants,
+  panelVariants,
+}: {
+  titleId: string;
+  loading: boolean;
+  onClose: () => void;
+  closeRef: RefObject<HTMLButtonElement | null>;
+  backdropVariants: Variants;
+  panelVariants: Variants;
+}) {
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center p-4">
+      <motion.div
+        aria-hidden
+        variants={backdropVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60"
+      />
+
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-busy={loading}
+        variants={panelVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="relative max-w-3xl w-full rounded-2xl border border-border bg-popover p-5 shadow-2xl"
+      >
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Close quick view"
+          className="absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="size-5" aria-hidden />
+        </button>
+
+        <div className="grid min-h-[18rem] place-items-center gap-3 text-center">
+          <h2 id={titleId} className="sr-only">
+            Quick view
+          </h2>
+          {loading ? (
+            <>
+              <span
+                className="size-8 animate-spin rounded-full border-2 border-border border-t-primary"
+                aria-hidden
+              />
+              <p className="text-sm text-muted-foreground" role="status">
+                Loading product…
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground" role="status">
+              Product not found.
+            </p>
+          )}
+        </div>
+      </motion.div>
+    </div>
   );
 }
 

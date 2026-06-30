@@ -22,6 +22,8 @@ export interface Product {
   description: string;
   /** Units available. 0 = out of stock; <= 5 surfaces a "Low stock" warning. */
   stock: number;
+  /** Uploaded image URL (DB-backed products). Falls back to a generated image. */
+  image?: string;
 }
 
 export const FEATURED_PRODUCTS: Product[] = [

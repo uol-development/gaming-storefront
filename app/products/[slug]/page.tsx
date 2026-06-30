@@ -2,14 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Check, ChevronRight, Star } from "lucide-react";
+import { productBlurb, productImageUrl, productSpecGroups } from "@/lib/data/catalog";
 import {
-  getAllProductSlugs,
-  getProductBySlug,
-  getRelatedProducts,
-  productBlurb,
-  productImageUrl,
-  productSpecGroups,
-} from "@/lib/data/catalog";
+  getStoreProductBySlug,
+  getStoreProductSlugs,
+  getStoreRelated,
+} from "@/lib/data/store";
 import { formatCompact, stockStatus } from "@/lib/format";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { SpecAccordion } from "@/components/product/spec-accordion";
@@ -18,8 +16,10 @@ import { ProductCard } from "@/components/product/product-card";
 
 const SITE_URL = "https://gaming-storefront-eight.vercel.app";
 
-export function generateStaticParams(): { slug: string }[] {
-  return getAllProductSlugs().map((slug) => ({ slug }));
+export const dynamicParams = true;
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  return (await getStoreProductSlugs()).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -28,7 +28,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getStoreProductBySlug(slug);
   if (!product) return {};
   return {
     title: product.name,
@@ -42,11 +42,11 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getStoreProductBySlug(slug);
   if (!product) notFound();
 
   const specGroups = productSpecGroups(product);
-  const related = getRelatedProducts(product);
+  const related = await getStoreRelated(product);
   const availability = stockStatus(product.stock);
   const availabilityDotClass =
     availability.tone === "in"

@@ -6,7 +6,12 @@ import { ArrowRight } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { ProductCard } from "@/components/product/product-card";
-import { FEATURED_PRODUCTS } from "@/lib/data/products";
+import type { Product } from "@/lib/data/products";
+
+interface ProductGridProps {
+  /** Featured products to render, supplied by a server parent. */
+  products: Product[];
+}
 
 /**
  * Featured-products rail. The scroll-reveal stagger is owned here — the
@@ -15,7 +20,7 @@ import { FEATURED_PRODUCTS } from "@/lib/data/products";
  * per-card interaction (hover lift, media zoom, wishlist, quick view, add to
  * cart). The "View all" link is a sibling of the grid, never nested in a card.
  */
-export function ProductGrid() {
+export function ProductGrid({ products }: ProductGridProps) {
   const { variants } = useReducedMotion();
 
   return (
@@ -39,19 +44,23 @@ export function ProductGrid() {
         </Link>
       </div>
 
-      <motion.ul
-        variants={variants(staggerContainer)}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
-        className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4"
-      >
-        {FEATURED_PRODUCTS.map((product) => (
-          <motion.li key={product.id} variants={variants(staggerItem)}>
-            <ProductCard product={product} />
-          </motion.li>
-        ))}
-      </motion.ul>
+      {products.length === 0 ? (
+        <p className="mt-8 text-sm text-muted-foreground">No featured gear right now — check back soon.</p>
+      ) : (
+        <motion.ul
+          variants={variants(staggerContainer)}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4"
+        >
+          {products.map((product) => (
+            <motion.li key={product.id} variants={variants(staggerItem)}>
+              <ProductCard product={product} />
+            </motion.li>
+          ))}
+        </motion.ul>
+      )}
     </section>
   );
 }
