@@ -44,7 +44,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
     heading: "Catalog",
     items: [
       { label: "Products", href: "/admin/products", icon: Package, ready: true },
-      { label: "Categories", href: "/admin/categories", icon: Tag },
+      { label: "Categories", href: "/admin/categories", icon: Tag, ready: true },
       { label: "Inventory", href: "/admin/inventory", icon: Boxes },
       { label: "Reviews", href: "/admin/reviews", icon: Star },
     ],

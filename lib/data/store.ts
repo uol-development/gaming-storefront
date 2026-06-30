@@ -139,3 +139,53 @@ export async function searchStoreProducts(query: string, limit = 8): Promise<Pro
     )
     .slice(0, limit);
 }
+
+/** A storefront-facing category (active, non-deleted), with a live product count. */
+export interface StoreCategory {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+  productCount: number;
+}
+
+/**
+ * Active categories for the storefront nav / "shop by category" grid, ordered by
+ * `position`. RLS "categories public read" already restricts the anon client to
+ * active, non-deleted rows; we add the same filters explicitly for clarity.
+ */
+export async function getStoreCategories(): Promise<StoreCategory[]> {
+  const supabase = publicClient();
+  const [{ data: cats }, { data: prods }] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id,slug,name,description,image_url,position")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("position", { ascending: true })
+      .order("name", { ascending: true }),
+    supabase
+      .from("products")
+      .select("category_id")
+      .eq("status", "published")
+      .is("deleted_at", null),
+  ]);
+
+  const counts = new Map<string, number>();
+  for (const row of (prods ?? []) as { category_id: string | null }[]) {
+    if (row.category_id) counts.set(row.category_id, (counts.get(row.category_id) ?? 0) + 1);
+  }
+
+  return ((cats ?? []) as Record<string, unknown>[]).map((c) => {
+    const id = str(c.id);
+    return {
+      id,
+      slug: str(c.slug),
+      name: str(c.name),
+      description: str(c.description),
+      imageUrl: typeof c.image_url === "string" && c.image_url ? c.image_url : undefined,
+      productCount: counts.get(id) ?? 0,
+    };
+  });
+}

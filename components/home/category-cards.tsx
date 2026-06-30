@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import {
   Armchair,
   ArrowUpRight,
+  Boxes,
   Cpu,
   HardDrive,
   Headphones,
@@ -19,7 +20,6 @@ import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { formatCompact } from "@/lib/format";
 import { categoryImageUrl } from "@/lib/data/catalog";
-import { CATEGORIES, type CategoryIcon } from "@/lib/data/categories";
 
 /**
  * "Shop by category" grid. The grid itself is the stagger list; each card nests
@@ -30,18 +30,39 @@ import { CATEGORIES, type CategoryIcon } from "@/lib/data/categories";
  * transform/opacity and contributes no CLS.
  */
 
-const ICON_BY_KEY: Record<CategoryIcon, LucideIcon> = {
-  laptop: Laptop,
-  monitor: Monitor,
-  cpu: Cpu,
-  keyboard: Keyboard,
-  mouse: Mouse,
-  headphones: Headphones,
-  armchair: Armchair,
-  "hard-drive": HardDrive,
+interface CategoryCardData {
+  slug: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+  productCount: number;
+}
+
+const ICON_BY_SLUG: Record<string, LucideIcon> = {
+  laptops: Laptop,
+  desktops: Cpu,
+  gpus: HardDrive,
+  monitors: Monitor,
+  keyboards: Keyboard,
+  mice: Mouse,
+  headsets: Headphones,
+  chairs: Armchair,
 };
 
-export function CategoryCards() {
+const GRADIENT_BY_SLUG: Record<string, string> = {
+  laptops: "from-violet-500/25 to-fuchsia-500/10",
+  desktops: "from-cyan-500/25 to-blue-500/10",
+  gpus: "from-emerald-500/25 to-teal-500/10",
+  monitors: "from-orange-500/25 to-amber-500/10",
+  keyboards: "from-pink-500/25 to-rose-500/10",
+  mice: "from-sky-500/25 to-indigo-500/10",
+  headsets: "from-purple-500/25 to-violet-500/10",
+  chairs: "from-teal-500/25 to-cyan-500/10",
+};
+
+const DEFAULT_GRADIENT = "from-slate-500/25 to-slate-500/10";
+
+export function CategoryCards({ categories }: { categories: CategoryCardData[] }) {
   const { variants } = useReducedMotion();
 
   return (
@@ -62,8 +83,10 @@ export function CategoryCards() {
         viewport={{ once: true, margin: "-80px" }}
         className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
       >
-        {CATEGORIES.map((category) => {
-          const Icon = ICON_BY_KEY[category.icon];
+        {categories.map((category) => {
+          const Icon = ICON_BY_SLUG[category.slug] ?? Boxes;
+          const gradient = GRADIENT_BY_SLUG[category.slug] ?? DEFAULT_GRADIENT;
+          const imageUrl = category.imageUrl ?? categoryImageUrl(category.slug);
 
           return (
             <motion.li key={category.slug} variants={variants(staggerItem)}>
@@ -78,7 +101,7 @@ export function CategoryCards() {
                   className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <img
-                    src={categoryImageUrl(category.slug)}
+                    src={imageUrl}
                     alt={`${category.name} gear`}
                     loading="lazy"
                     decoding="async"
@@ -94,7 +117,7 @@ export function CategoryCards() {
                     aria-hidden
                     className={cn(
                       "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-50 mix-blend-multiply",
-                      category.gradient,
+                      gradient,
                     )}
                   />
 
@@ -110,11 +133,13 @@ export function CategoryCards() {
                   <span className="relative mt-4 font-medium text-foreground">
                     {category.name}
                   </span>
-                  <span className="relative mt-1 text-sm text-muted-foreground">
-                    {category.tagline}
-                  </span>
+                  {category.description ? (
+                    <span className="relative mt-1 text-sm text-muted-foreground">
+                      {category.description}
+                    </span>
+                  ) : null}
                   <span className="relative mt-3 text-xs text-muted-foreground">
-                    {formatCompact(category.itemCount)} products
+                    {formatCompact(category.productCount)} products
                   </span>
                 </Link>
               </motion.div>

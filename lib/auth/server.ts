@@ -45,6 +45,8 @@ export async function requireStaff(): Promise<AdminProfile> {
 export const can = {
   manageProducts: (role: UserRole) =>
     ["super_admin", "admin", "manager", "editor"].includes(role),
+  manageCategories: (role: UserRole) =>
+    ["super_admin", "admin", "manager", "editor"].includes(role),
   manageUsers: (role: UserRole) => ["super_admin", "admin"].includes(role),
   delete: (role: UserRole) => ["super_admin", "admin", "manager"].includes(role),
 };

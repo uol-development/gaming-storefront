@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 
 import { Hero } from "@/components/home/hero";
 import { SectionSkeleton } from "@/components/home/section-skeleton";
-import { getStoreProducts } from "@/lib/data/store";
+import { getStoreCategories, getStoreProducts } from "@/lib/data/store";
 
 export const metadata: Metadata = {
   title: "Premium Gaming Gear",
@@ -51,7 +51,10 @@ const Newsletter = dynamic(
 );
 
 export default async function HomePage() {
-  const products = await getStoreProducts();
+  const [products, categories] = await Promise.all([
+    getStoreProducts(),
+    getStoreCategories(),
+  ]);
   const featured = products.slice(0, 8);
   const deals = products
     .filter((p) => typeof p.compareAtPrice === "number")
@@ -60,7 +63,7 @@ export default async function HomePage() {
   return (
     <>
       <Hero />
-      <CategoryCards />
+      <CategoryCards categories={categories} />
       <FlashDeals deals={deals} />
       <ProductGrid products={featured} />
       <BrandCarousel />
