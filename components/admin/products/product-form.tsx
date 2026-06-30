@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm, type Resolver, type SubmitHandler } from "react-hook-form";
+import {
+  useForm,
+  type Resolver,
+  type SubmitErrorHandler,
+  type SubmitHandler,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AlertCircle, Loader2, Plus, X } from "lucide-react";
@@ -440,6 +445,7 @@ export function ProductForm(props: ProductFormProps) {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema) as unknown as Resolver<FormValues>,
@@ -466,9 +472,11 @@ export function ProductForm(props: ProductFormProps) {
     return deriveInventoryStatus(stock);
   }, [stockValue]);
 
-  const onSubmit: SubmitHandler<FormValues> = async (raw) => {
+  const onSubmit: SubmitHandler<FormValues> = async () => {
     setServerError(null);
-    const parsed = formSchema.parse(raw);
+    // The resolver hands back transformed (dollars->number) values; re-derive
+    // from the raw string field state so the transform runs exactly once.
+    const parsed = formSchema.parse(getValues());
     const payload = toProductInput(parsed);
 
     const res =
@@ -484,10 +492,24 @@ export function ProductForm(props: ProductFormProps) {
     router.refresh();
   };
 
+  // When validation blocks submit, surface it and jump to the first bad field
+  // (e.g. a missing Name that's scrolled off-screen).
+  const onInvalid: SubmitErrorHandler<FormValues> = (formErrors) => {
+    setServerError("Please fix the highlighted fields and try again.");
+    const firstKey = Object.keys(formErrors)[0];
+    if (firstKey) {
+      const el = document.getElementById(firstKey);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.focus();
+      }
+    }
+  };
+
   const slugRegister = register("slug");
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="pb-24">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="pb-24">
       {serverError ? (
         <div
           role="alert"
