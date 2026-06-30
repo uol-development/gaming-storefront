@@ -7,6 +7,7 @@ import {
   getProductBySlug,
   getRelatedProducts,
   productBlurb,
+  productImageUrl,
   productSpecGroups,
 } from "@/lib/data/catalog";
 import { formatCompact, stockStatus } from "@/lib/format";
@@ -14,6 +15,8 @@ import { ProductGallery } from "@/components/product/product-gallery";
 import { SpecAccordion } from "@/components/product/spec-accordion";
 import { StickyBuyPanel } from "@/components/product/sticky-buy-panel";
 import { ProductCard } from "@/components/product/product-card";
+
+const SITE_URL = "https://gaming-storefront-eight.vercel.app";
 
 export function generateStaticParams(): { slug: string }[] {
   return getAllProductSlugs().map((slug) => ({ slug }));
@@ -58,8 +61,35 @@ export default async function ProductDetailPage({
         ? "text-amber-400"
         : "text-muted-foreground";
 
+  const productLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    sku: product.id,
+    brand: { "@type": "Brand", name: product.brand },
+    image: [productImageUrl(product, 1200)],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: product.rating,
+      reviewCount: product.reviews,
+    },
+    offers: {
+      "@type": "Offer",
+      price: (product.price / 100).toFixed(2),
+      priceCurrency: "USD",
+      availability:
+        product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `${SITE_URL}/products/${product.slug}`,
+    },
+  };
+
   return (
     <main className="container mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }}
+      />
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-6">
         <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
