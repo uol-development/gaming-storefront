@@ -94,7 +94,7 @@ export function FilterDrawer({ open, onClose, facets, value, onChange, onClear }
             className="absolute left-0 top-0 flex h-dvh w-[min(88vw,22rem)] flex-col border-r border-border bg-background shadow-2xl"
           >
             {/* HEADER */}
-            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/60 px-4">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/60 px-4 pt-[env(safe-area-inset-top)]">
               <h2
                 id={titleId}
                 className="font-display text-lg font-bold tracking-tight text-foreground"
@@ -266,7 +266,7 @@ export function FilterDrawer({ open, onClose, facets, value, onChange, onClear }
             </div>
 
             {/* FOOTER */}
-            <div className="flex shrink-0 items-center gap-3 border-t border-border/60 p-4">
+            <div className="flex shrink-0 items-center gap-3 border-t border-border/60 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <button
                 type="button"
                 onClick={onClear}

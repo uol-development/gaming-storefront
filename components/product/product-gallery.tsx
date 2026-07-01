@@ -85,7 +85,7 @@ export function ProductGallery({ product }: { product: Product }) {
       <div
         role="group"
         aria-label={`${product.name} gallery thumbnails`}
-        className="flex gap-2"
+        className="flex gap-2 overflow-x-auto"
         onKeyDown={onStripKeyDown}
       >
         {views.map((view, index) => {

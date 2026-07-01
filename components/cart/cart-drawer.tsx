@@ -137,7 +137,7 @@ export function CartDrawer() {
             className="absolute right-0 top-0 flex h-dvh w-[min(92vw,28rem)] flex-col border-l border-border bg-background shadow-2xl"
           >
             {/* HEADER */}
-            <div className="flex h-16 items-center justify-between gap-3 border-b border-border/60 px-4">
+            <div className="flex h-16 items-center justify-between gap-3 border-b border-border/60 px-4 pt-[env(safe-area-inset-top)]">
               <div className="flex items-baseline gap-2">
                 <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
                   Your cart
@@ -277,7 +277,7 @@ export function CartDrawer() {
 
             {/* FOOTER */}
             {hasItems ? (
-              <div className="border-t border-border/60 p-4">
+              <div className="border-t border-border/60 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm text-muted-foreground">Subtotal</span>
                   <span className="font-display text-lg font-bold text-foreground">

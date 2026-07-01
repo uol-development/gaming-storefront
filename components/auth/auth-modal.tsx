@@ -293,7 +293,7 @@ export function AuthModal() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="relative w-full max-w-md rounded-2xl border border-border bg-popover p-6 shadow-2xl"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-popover p-6 shadow-2xl"
           >
             <button
               ref={closeRef}

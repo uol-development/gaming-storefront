@@ -189,7 +189,7 @@ function QuickViewShell({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="relative max-w-3xl w-full rounded-2xl border border-border bg-popover p-5 shadow-2xl"
+        className="relative max-h-[calc(100dvh-2rem)] max-w-3xl w-full overflow-y-auto rounded-2xl border border-border bg-popover p-5 shadow-2xl"
       >
         <button
           ref={closeRef}
@@ -306,7 +306,7 @@ function QuickViewContent({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="relative max-w-3xl w-full rounded-2xl border border-border bg-popover p-5 shadow-2xl"
+        className="relative max-h-[calc(100dvh-2rem)] max-w-3xl w-full overflow-y-auto rounded-2xl border border-border bg-popover p-5 shadow-2xl"
       >
         <button
           ref={closeRef}

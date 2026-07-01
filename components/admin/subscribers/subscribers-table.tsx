@@ -364,7 +364,7 @@ export function SubscribersTable({ rows, total, page, perPage, search }: Subscri
       </div>
 
       {rows.length > 0 ? (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-sm text-muted-foreground">
             Page {page} of {totalPages}
           </p>

@@ -51,6 +51,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#15141c",
   colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  // Let content extend under notches / the Dynamic Island so `env(safe-area-*)`
+  // insets are available. No maximumScale — pinch-to-zoom stays enabled (a11y).
+  viewportFit: "cover",
 };
 
 const JSON_LD = {

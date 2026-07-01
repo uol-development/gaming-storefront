@@ -157,7 +157,7 @@ export function SearchOverlay() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="absolute inset-x-0 top-0 mx-auto w-full max-w-2xl rounded-b-2xl border border-border bg-popover p-4 shadow-2xl sm:mt-20 sm:rounded-2xl"
+            className="absolute inset-x-0 top-0 mx-auto flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-y-auto rounded-b-2xl border border-border bg-popover p-4 shadow-2xl sm:mt-20 sm:max-h-[calc(100dvh-6rem)] sm:rounded-2xl"
           >
             {/* Search input */}
             <div className="relative flex items-center">

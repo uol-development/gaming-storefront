@@ -124,7 +124,7 @@ export function AdminShell({
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
           <Sidebar
             pathname={pathname}
-            className="absolute left-0 top-0 flex h-dvh"
+            className="absolute left-0 top-0 flex h-dvh pt-[env(safe-area-inset-top)]"
             onNavigate={() => setMobileOpen(false)}
           />
         </div>

@@ -494,7 +494,7 @@ export function CategoryForm(props: CategoryFormProps) {
       </div>
 
       {/* Sticky action footer */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 backdrop-blur-xl lg:pl-64">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/90 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] lg:pl-64">
         <div className="flex items-center justify-end gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
             href="/admin/categories"

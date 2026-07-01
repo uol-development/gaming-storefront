@@ -88,7 +88,7 @@ export function FeaturedVideos({
       {/* Carousel track — native touch swipe + scroll-snap. Hidden scrollbar. */}
       <div
         ref={trackRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex touch-pan-x snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {videos.map((video) => (
           <VideoCard key={video.id} video={video} onPlay={setActive} />

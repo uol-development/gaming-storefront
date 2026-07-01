@@ -88,7 +88,7 @@ export function MobileNav({ items, className }: MobileNavProps) {
               exit={prefersReduced ? { opacity: 0 } : "exit"}
               className="absolute right-0 top-0 flex h-dvh w-[min(86vw,22rem)] flex-col border-l border-border/70 bg-background shadow-2xl"
             >
-              <div className="flex h-16 items-center justify-between border-b border-border/60 px-4">
+              <div className="flex h-16 items-center justify-between border-b border-border/60 px-4 pt-[env(safe-area-inset-top)]">
                 <span className="font-display text-lg font-bold tracking-tight">NEXUS</span>
                 <button
                   ref={closeRef}
@@ -101,7 +101,7 @@ export function MobileNav({ items, className }: MobileNavProps) {
                 </button>
               </div>
 
-              <nav aria-label="Mobile" className="flex-1 overflow-y-auto overscroll-contain p-2">
+              <nav aria-label="Mobile" className="flex-1 overflow-y-auto overscroll-contain p-2 pb-[env(safe-area-inset-bottom)]">
                 {items.map((item) => (
                   <MobileNavItem key={item.href} item={item} onNavigate={closeNav} />
                 ))}

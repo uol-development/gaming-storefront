@@ -97,8 +97,37 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    /* Stop iOS from auto-inflating text on orientation change. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    /* Belt-and-suspenders against horizontal overflow at any viewport width;
+       `clip` (unlike `hidden`) never creates a scroll container, so sticky /
+       fixed positioning and inner carousels keep working. */
+    overflow-x: clip;
+    /* Remove the grey tap flash on touch devices. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Media never overflows its container (responsive images/video/embeds). */
+  img,
+  picture,
+  video,
+  canvas,
+  iframe {
+    max-width: 100%;
+  }
+
+  /* Safe-area helpers for fixed/sticky bars near notches & gesture areas. */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
   }
 
   /*
