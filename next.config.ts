@@ -2,6 +2,16 @@ import type { NextConfig } from "next";
 
 const isGithubPages = process.env.GITHUB_PAGES === "true";
 
+// Host of the Supabase project (for storage image URLs), derived from the env.
+const supabaseHost = (() => {
+  try {
+    const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    return raw ? new URL(raw).hostname : undefined;
+  } catch {
+    return undefined;
+  }
+})();
+
 /**
  * GitHub Pages serves this repo from the `/gaming-storefront` subpath as plain
  * static files, so the Pages build switches on static export, the subpath
@@ -13,7 +23,15 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [{ protocol: "https", hostname: "**" }],
+    // Allowlist only the hosts we actually load images from — stops the
+    // /_next/image optimizer being usable as an open proxy / SSRF + DoS surface
+    // (was hostname:"**"). The storefront uses <img>, so this can't break rendering.
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "i.ytimg.com" },
+      { protocol: "https", hostname: "img.youtube.com" },
+      ...(supabaseHost ? [{ protocol: "https" as const, hostname: supabaseHost }] : []),
+    ],
     // Pages has no image-optimization server.
     unoptimized: isGithubPages,
   },
