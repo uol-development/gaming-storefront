@@ -27,7 +27,25 @@ export const metadata: Metadata = {
     template: "%s · NEXUS",
   },
   description:
-    "Gaming laptops, custom PCs, GPUs, monitors, and pro peripherals — engineered for performance, delivered fast.",
+    "Gaming laptops, custom PCs, GPUs, monitors, and pro peripherals — engineered for performance, delivered fast across Bangladesh.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_BD",
+    siteName: "NEXUS",
+    url: SITE_URL,
+    title: "NEXUS — Premium Gaming Gear",
+    description:
+      "Gaming laptops, custom PCs, GPUs, monitors, and pro peripherals — engineered for performance, delivered fast across Bangladesh.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NEXUS — Premium Gaming Gear",
+    description:
+      "Gaming laptops, custom PCs, GPUs, monitors, and pro peripherals — engineered for performance, delivered fast across Bangladesh.",
+  },
 };
 
 export const viewport: Viewport = {
@@ -45,6 +63,19 @@ const JSON_LD = {
       url: SITE_URL,
       description:
         "Premium gaming laptops, custom PCs, GPUs, monitors, and pro peripherals.",
+      areaServed: "BD",
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "BD",
+        addressLocality: "Dhaka",
+      },
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        telephone: "+880 1712-345678",
+        email: "info@ultimateorganiclife.com",
+        areaServed: "BD",
+      },
     },
     {
       "@type": "WebSite",

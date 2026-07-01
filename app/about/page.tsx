@@ -6,7 +6,7 @@ export const metadata = { title: "About NEXUS" };
 
 const STATS: { value: string; label: string }[] = [
   { value: "2014", label: "Founded by competitive players" },
-  { value: "750K+", label: "Orders shipped worldwide" },
+  { value: "750K+", label: "Orders shipped across Bangladesh" },
   { value: "4.8/5", label: "Average customer rating" },
   { value: "48hr", label: "Typical dispatch time" },
 ];
@@ -50,7 +50,7 @@ export default function AboutPage() {
         </Prose>
         <Prose>
           So we built a storefront run by people who actually game. Today we ship
-          to players in dozens of countries, but the mission has not changed — we
+          to players in every district of Bangladesh, but the mission has not changed — we
           curate the lineup, stand behind every order, and treat your next
           upgrade like it is one of ours.
         </Prose>

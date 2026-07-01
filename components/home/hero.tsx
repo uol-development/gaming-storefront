@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "motion/react";
-import { RotateCcw, ShieldCheck, Truck, type LucideIcon } from "lucide-react";
+import { Banknote, RotateCcw, Truck, type LucideIcon } from "lucide-react";
 import { staggerContainer, staggerItem } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { imageUrl, SECTION_IMAGE_IDS } from "@/lib/data/images";
@@ -31,9 +31,9 @@ interface TrustSignal {
 }
 
 const TRUST_SIGNALS: readonly TrustSignal[] = [
-  { icon: Truck, label: "Free 2-day shipping" },
-  { icon: RotateCcw, label: "30-day returns" },
-  { icon: ShieldCheck, label: "Lifetime support" },
+  { icon: Truck, label: "Fast delivery across Bangladesh" },
+  { icon: Banknote, label: "Cash on delivery nationwide" },
+  { icon: RotateCcw, label: "Easy 30-day returns" },
 ];
 
 export function Hero() {

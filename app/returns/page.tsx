@@ -50,18 +50,19 @@ export default function ReturnsPage() {
             contact page
           </Link>{" "}
           with your order number and the item you'd like to send back. Our team will
-          confirm your eligibility and email you a prepaid return label along with
-          step-by-step instructions. Pack the item securely, attach the label, and drop
-          it with the carrier.
+          confirm your eligibility and arrange a courier pickup along with step-by-step
+          instructions. Just pack the item securely and hand it to the courier.
         </Prose>
       </Section>
 
       <Section heading="Refund timing">
         <Prose>
           Once your return reaches our warehouse, we inspect it within 2 business days.
-          Approved refunds are issued to your original payment method and typically
-          appear within 5 to 10 business days, depending on your bank or card provider.
-          We'll email you the moment your refund is on its way.
+          Approved refunds are issued to your original payment method — bKash, Nagad,
+          Rocket, or your card — and typically appear within 5 to 10 business days,
+          depending on your provider. Paid cash on delivery? We'll refund via bKash,
+          Nagad, or Rocket to a number you choose. We'll message you the moment your
+          refund is on its way.
         </Prose>
       </Section>
 

@@ -71,7 +71,14 @@ const LEGAL_LINKS: FooterLink[] = [
   { label: "Cookies", href: "/cookies" },
 ];
 
-const PAYMENT_METHODS = ["Visa", "Mastercard", "Amex", "PayPal", "Apple Pay"] as const;
+const PAYMENT_METHODS = [
+  "bKash",
+  "Nagad",
+  "Rocket",
+  "Cash on Delivery",
+  "Visa",
+  "Mastercard",
+] as const;
 
 const linkClass =
   "rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";

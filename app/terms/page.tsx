@@ -46,7 +46,7 @@ export default function TermsPage() {
           availability. We work hard to keep pricing and product details
           accurate, but errors can occur. If a product is listed at an incorrect
           price, we may cancel the order and refund any payment made. Prices are
-          shown in your local currency and exclude any taxes or duties unless
+          shown in Bangladeshi Taka (৳) and exclude any taxes or duties unless
           stated at checkout.
         </Prose>
       </Section>
@@ -101,10 +101,10 @@ export default function TermsPage() {
 
       <Section heading="Governing law">
         <Prose>
-          These terms are governed by the laws of the jurisdiction in which NEXUS
-          operates, without regard to conflict-of-law principles. Any disputes
-          will be handled by the courts of that jurisdiction. If any provision is
-          found unenforceable, the remaining provisions stay in full effect.
+          These terms are governed by the laws of Bangladesh, without regard to
+          conflict-of-law principles. Any disputes will be handled by the courts of
+          Dhaka, Bangladesh. If any provision is found unenforceable, the remaining
+          provisions stay in full effect.
         </Prose>
       </Section>
 

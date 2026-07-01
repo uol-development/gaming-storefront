@@ -17,33 +17,45 @@ export default function ShippingPage() {
   return (
     <ContentPage
       title="Shipping & Delivery"
-      lede="Fast, tracked delivery on every order. Here's exactly when your gear leaves the warehouse and when it lands at your door."
+      lede="Fast, tracked delivery across Bangladesh, with cash on delivery available nationwide. Here's exactly when your gear leaves the warehouse and when it lands at your door."
     >
-      <Section heading="Delivery options & timeframes">
+      <Section heading="Delivery zones & fees">
         <Prose>
-          We ship from regional warehouses to keep transit times short. Choose the
-          speed that suits you at checkout — pricing is shown before you pay, with no
-          surprises.
+          We deliver nationwide across Bangladesh. Your delivery fee is set by zone and
+          shown at checkout before you pay, with no surprises.
         </Prose>
         <ul className={listClass}>
           <li>
-            <strong className="text-foreground">Standard delivery</strong> — 3 to 5
-            business days. Flat rate, calculated at checkout by destination.
+            <strong className="text-foreground">Inside Dhaka</strong> — ৳60, delivered
+            in 1 to 2 days.
           </li>
           <li>
-            <strong className="text-foreground">Express delivery</strong> — 1 to 2
-            business days for orders placed before 1pm local time.
+            <strong className="text-foreground">Dhaka sub-area</strong> — ৳100, delivered
+            in 2 to 3 days. Covers Narayanganj, Gazipur, Savar, Keraniganj, Tongi and
+            nearby areas.
           </li>
           <li>
-            <strong className="text-foreground">Free shipping</strong> — automatically
-            applied to every order over $99 (standard speed).
+            <strong className="text-foreground">Outside Dhaka</strong> — ৳130, delivered
+            in 3 to 5 days.
+          </li>
+          <li>
+            <strong className="text-foreground">Free delivery</strong> — automatically
+            applied to every order over ৳1,50,000.
           </li>
         </ul>
       </Section>
 
+      <Section heading="Cash on delivery">
+        <Prose>
+          Prefer to pay when your gear arrives? Cash on delivery is available nationwide.
+          You can also pay with bKash, Nagad, Rocket, or a Visa/Mastercard at checkout —
+          whatever suits you best.
+        </Prose>
+      </Section>
+
       <Section heading="Order processing">
         <Prose>
-          In-stock orders are picked, packed, and handed to the carrier within 1
+          In-stock orders are picked, packed, and handed to the courier within 1
           business day. Orders placed on weekends or public holidays begin processing
           the next business day. Larger items such as desktops and chairs may need an
           extra day for protective packing.
@@ -66,13 +78,12 @@ export default function ShippingPage() {
         </Prose>
       </Section>
 
-      <Section heading="International shipping">
+      <Section heading="Nationwide coverage">
         <Prose>
-          We currently ship to a growing list of countries. International delivery
-          typically takes 7 to 14 business days depending on destination and customs
-          clearance. Import duties and taxes, where applicable, are the responsibility
-          of the recipient and are not included in the order total. Available
-          destinations and rates are confirmed at checkout once you enter your address.
+          We deliver to every district across Bangladesh. Delivery to areas outside
+          Dhaka typically takes 3 to 5 days depending on your location and courier
+          schedules. Your exact fee and estimated timeframe are confirmed at checkout
+          once you enter your address.
         </Prose>
       </Section>
 

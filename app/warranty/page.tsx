@@ -55,7 +55,7 @@ export default function WarrantyPage() {
           </Link>{" "}
           with your order number and a short description of the fault — photos or a
           quick video help us diagnose faster. Our team will confirm coverage and
-          arrange a repair, replacement, or prepaid return as needed. Most claims are
+          arrange a repair, replacement, or courier pickup as needed. Most claims are
           assessed within 2 business days.
         </Prose>
       </Section>

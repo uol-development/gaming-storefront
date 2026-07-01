@@ -1,4 +1,4 @@
-import { Clock, LifeBuoy, Mail, Timer, type LucideIcon } from "lucide-react";
+import { Clock, LifeBuoy, Mail, MapPin, Phone, Timer, type LucideIcon } from "lucide-react";
 
 import { ContentPage, Section, Prose } from "@/components/content/content-page";
 
@@ -15,12 +15,22 @@ interface ContactDetail {
 const CONTACT_DETAILS: ContactDetail[] = [
   {
     label: "Email us",
-    value: "support@nexus.gg",
+    value: "info@ultimateorganiclife.com",
     icon: Mail,
   },
   {
+    label: "Call us",
+    value: "+880 1712-345678",
+    icon: Phone,
+  },
+  {
+    label: "Visit us",
+    value: "House 42, Road 11, Banani, Dhaka 1213, Bangladesh",
+    icon: MapPin,
+  },
+  {
     label: "Support hours",
-    value: "Mon–Fri, 9am–7pm ET",
+    value: "Sat–Thu, 9am–7pm BST",
     icon: Clock,
   },
   {

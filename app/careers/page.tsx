@@ -50,7 +50,7 @@ const OPEN_ROLES: OpenRole[] = [
   {
     title: "Warehouse Operations Lead",
     team: "Fulfilment",
-    location: "Austin, TX",
+    location: "Dhaka",
     type: "Full-time",
     blurb:
       "Keep dispatch tight and orders accurate. Lead a small team that gets premium hardware out the door within 48 hours, every time.",

@@ -305,7 +305,7 @@ export function CartDrawer() {
 
                 <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                   <Truck className="size-3.5" aria-hidden />
-                  Free shipping on all orders.
+                  Cash on delivery available nationwide.
                 </p>
               </div>
             ) : null}

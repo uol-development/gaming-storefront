@@ -55,7 +55,7 @@ const FAQS: Faq[] = [
   {
     question: "How long does delivery take?",
     answer:
-      "In-stock orders ship within one business day. Standard delivery lands in 3–5 business days, and express options are offered at checkout. See our shipping page for full timelines and rates.",
+      "In-stock orders ship within one business day. Inside Dhaka lands in 1–2 days, Dhaka sub-areas in 2–3 days, and outside Dhaka in 3–5 days. See our shipping page for full timelines and delivery fees.",
   },
   {
     question: "Can I return something I changed my mind about?",

@@ -176,7 +176,7 @@ export function StickyBuyPanel({ product }: StickyBuyPanelProps) {
         </button>
 
         <ul className="grid gap-2 border-t border-border pt-4">
-          <TrustRow icon={<Truck className="size-4" aria-hidden />} label="Free 2-day shipping" />
+          <TrustRow icon={<Truck className="size-4" aria-hidden />} label="Fast delivery + cash on delivery" />
           <TrustRow icon={<RotateCcw className="size-4" aria-hidden />} label="30-day returns" />
           <TrustRow
             icon={<ShieldCheck className="size-4" aria-hidden />}

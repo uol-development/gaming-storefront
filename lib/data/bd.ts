@@ -99,7 +99,7 @@ export const PAYMENT_OPTIONS: readonly PaymentOption[] = [
   { value: "bkash", label: "bKash", kind: "wallet", hint: "Pay from your bKash account." },
   { value: "nagad", label: "Nagad", kind: "wallet", hint: "Pay from your Nagad account." },
   { value: "rocket", label: "Rocket", kind: "wallet", hint: "Pay from your Rocket account." },
-  { value: "card", label: "Card", kind: "card", hint: "Visa, Mastercard or American Express." },
+  { value: "card", label: "Card", kind: "card", hint: "Pay with your Visa or Mastercard." },
 ] as const;
 
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
