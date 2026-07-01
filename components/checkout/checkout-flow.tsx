@@ -59,15 +59,7 @@ const EXPIRY_RE = /^(0[1-9]|1[0-2])\/\d{2}$/;
 
 const BD_PHONE_MESSAGE = "Enter a valid Bangladeshi mobile number, e.g. 01712345678";
 
-type AddressKey =
-  | "email"
-  | "firstName"
-  | "lastName"
-  | "phone"
-  | "line1"
-  | "area"
-  | "district"
-  | "postal";
+type AddressKey = "name" | "email" | "phone" | "line1" | "area" | "district";
 type PaymentKey = "cardName" | "cardNumber" | "expiry" | "cvc" | "walletNumber" | "walletTxn";
 type FieldKey = AddressKey | PaymentKey;
 
@@ -80,14 +72,12 @@ interface PaymentState extends PaymentFields {
 }
 
 const EMPTY_ADDRESS: Address = {
+  name: "",
   email: "",
-  firstName: "",
-  lastName: "",
   phone: "",
   line1: "",
   area: "",
   district: "Dhaka City",
-  postal: "",
 };
 
 const EMPTY_PAYMENT: PaymentState = {
@@ -219,9 +209,8 @@ export function CheckoutFlow() {
     (current: Step): Errors => {
       const next: Errors = {};
       if (current === 0) {
+        if (address.name.trim().length === 0) next.name = "Name is required";
         if (!EMAIL_RE.test(address.email.trim())) next.email = "Enter a valid email address.";
-        if (address.firstName.trim().length === 0) next.firstName = "First name is required.";
-        if (address.lastName.trim().length === 0) next.lastName = "Last name is required.";
         if (!BD_PHONE_RE.test(address.phone.trim())) next.phone = BD_PHONE_MESSAGE;
         if (address.line1.trim().length === 0) next.line1 = "Address is required.";
         if (address.area.trim().length === 0) next.area = "Area / Thana is required.";
@@ -280,15 +269,14 @@ export function CheckoutFlow() {
       const result = await placeOrderAction({
         customer: {
           email: address.email.trim(),
-          firstName: address.firstName.trim(),
-          lastName: address.lastName.trim(),
+          name: address.name.trim(),
           phone: address.phone.trim(),
         },
         shippingAddress: {
           line1: address.line1.trim(),
           area: address.area.trim(),
           district: address.district,
-          postal_code: address.postal.trim(),
+          postal_code: "",
         },
         deliveryZone: zone,
         paymentMethod: payment.method,
@@ -563,6 +551,16 @@ function AddressStep({ idBase, address, errors, zone, onChange }: AddressStepPro
       </p>
 
       <Field
+        id={`${idBase}-name`}
+        label="Name"
+        autoComplete="name"
+        placeholder="Full name"
+        value={address.name}
+        error={errors.name}
+        onChange={(v) => onChange("name", v)}
+      />
+
+      <Field
         id={`${idBase}-email`}
         label="Email"
         type="email"
@@ -574,32 +572,13 @@ function AddressStep({ idBase, address, errors, zone, onChange }: AddressStepPro
         onChange={(v) => onChange("email", v)}
       />
 
-      <div className="grid gap-x-4 sm:grid-cols-2">
-        <Field
-          id={`${idBase}-firstName`}
-          label="First name"
-          autoComplete="given-name"
-          value={address.firstName}
-          error={errors.firstName}
-          onChange={(v) => onChange("firstName", v)}
-        />
-        <Field
-          id={`${idBase}-lastName`}
-          label="Last name"
-          autoComplete="family-name"
-          value={address.lastName}
-          error={errors.lastName}
-          onChange={(v) => onChange("lastName", v)}
-        />
-      </div>
-
       <Field
         id={`${idBase}-phone`}
         label="Mobile number"
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        placeholder="01712345678"
+        placeholder="01XXXXXXXXX"
         maxLength={11}
         value={address.phone}
         error={errors.phone}
@@ -608,7 +587,7 @@ function AddressStep({ idBase, address, errors, zone, onChange }: AddressStepPro
 
       <Field
         id={`${idBase}-line1`}
-        label="Address (house, road)"
+        label="Address"
         autoComplete="street-address"
         placeholder="House 12, Road 5"
         value={address.line1}
@@ -626,64 +605,53 @@ function AddressStep({ idBase, address, errors, zone, onChange }: AddressStepPro
         onChange={(v) => onChange("area", v)}
       />
 
-      <div className="grid gap-x-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor={districtId} className="block text-sm font-medium text-foreground">
-            District / Delivery area
-          </label>
-          <select
-            id={districtId}
-            value={address.district}
-            aria-invalid={districtInvalid || undefined}
-            aria-describedby={districtInvalid ? districtErrorId : districtHelpId}
-            onChange={(event) => onChange("district", event.target.value)}
-            className={cn(
-              "h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              districtInvalid ? "border-destructive ring-1 ring-destructive" : "border-border",
-            )}
-          >
-            <optgroup label={DELIVERY_ZONE_LABEL.inside_dhaka}>
-              {BD_AREAS.filter((area) => area.zone === "inside_dhaka").map((area) => (
-                <option key={area.name} value={area.name}>
-                  {area.name}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label={DELIVERY_ZONE_LABEL.dhaka_suburb}>
-              {BD_AREAS.filter((area) => area.zone === "dhaka_suburb").map((area) => (
-                <option key={area.name} value={area.name}>
-                  {area.name}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label={DELIVERY_ZONE_LABEL.outside_dhaka}>
-              {BD_AREAS.filter((area) => area.zone === "outside_dhaka").map((area) => (
-                <option key={area.name} value={area.name}>
-                  {area.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
-          {districtInvalid ? (
-            <p id={districtErrorId} className="min-h-4 text-xs leading-4 text-destructive">
-              {errors.district ?? ""}
-            </p>
-          ) : (
-            <p id={districtHelpId} className="min-h-4 text-xs leading-4 text-muted-foreground">
-              Delivery: {DELIVERY_ZONE_LABEL[zone]}
-            </p>
+      <div className="space-y-1.5">
+        <label htmlFor={districtId} className="block text-sm font-medium text-foreground">
+          District / Delivery area
+        </label>
+        <select
+          id={districtId}
+          value={address.district}
+          aria-invalid={districtInvalid || undefined}
+          aria-describedby={districtInvalid ? districtErrorId : districtHelpId}
+          onChange={(event) => onChange("district", event.target.value)}
+          className={cn(
+            "h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            districtInvalid ? "border-destructive ring-1 ring-destructive" : "border-border",
           )}
-        </div>
-        <Field
-          id={`${idBase}-postal`}
-          label="Postal code (optional)"
-          autoComplete="postal-code"
-          placeholder="1212"
-          value={address.postal}
-          error={errors.postal}
-          onChange={(v) => onChange("postal", v)}
-        />
+        >
+          <optgroup label={DELIVERY_ZONE_LABEL.inside_dhaka}>
+            {BD_AREAS.filter((area) => area.zone === "inside_dhaka").map((area) => (
+              <option key={area.name} value={area.name}>
+                {area.name}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={DELIVERY_ZONE_LABEL.dhaka_suburb}>
+            {BD_AREAS.filter((area) => area.zone === "dhaka_suburb").map((area) => (
+              <option key={area.name} value={area.name}>
+                {area.name}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={DELIVERY_ZONE_LABEL.outside_dhaka}>
+            {BD_AREAS.filter((area) => area.zone === "outside_dhaka").map((area) => (
+              <option key={area.name} value={area.name}>
+                {area.name}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+        {districtInvalid ? (
+          <p id={districtErrorId} className="min-h-4 text-xs leading-4 text-destructive">
+            {errors.district ?? ""}
+          </p>
+        ) : (
+          <p id={districtHelpId} className="min-h-4 text-xs leading-4 text-muted-foreground">
+            Delivery: {DELIVERY_ZONE_LABEL[zone]}
+          </p>
+        )}
       </div>
 
       <p className="pt-1 text-xs text-muted-foreground">Country: Bangladesh</p>
@@ -855,7 +823,7 @@ function paymentReference(payment: PaymentState): string {
 }
 
 function ReviewStep({ address, payment, rows }: ReviewStepProps) {
-  const fullName = `${address.firstName} ${address.lastName}`.trim();
+  const fullName = address.name.trim();
   return (
     <div className="space-y-5">
       <div className="space-y-1">

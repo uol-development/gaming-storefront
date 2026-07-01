@@ -22,8 +22,7 @@ const lineSchema = z.object({
 const placeOrderSchema = z.object({
   customer: z.object({
     email: z.string().email(),
-    firstName: z.string().trim().min(1),
-    lastName: z.string().trim().min(1),
+    name: z.string().trim().min(1),
     phone: z.string().trim().regex(BD_PHONE_RE, "Enter a valid Bangladeshi mobile number"),
   }),
   shippingAddress: z.object({
@@ -108,7 +107,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       .from("orders")
       .insert({
         order_number: orderNumber,
-        customer_name: `${customer.firstName} ${customer.lastName}`.trim(),
+        customer_name: customer.name,
         customer_email: customer.email,
         customer_phone: customer.phone,
         status: "pending",
@@ -146,7 +145,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     await supabase.from("customers").upsert(
       {
         email: customer.email,
-        name: `${customer.firstName} ${customer.lastName}`.trim(),
+        name: customer.name,
         phone: customer.phone,
       },
       { onConflict: "email", ignoreDuplicates: true },
