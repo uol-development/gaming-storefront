@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
 import { productGradient, productImageUrl } from "@/lib/data/catalog";
 import { getStoreProductsByIdsAction } from "@/lib/data/store-actions";
+import { computeOrderTotals } from "@/lib/data/pricing";
 import type { Product } from "@/lib/data/products";
 import { useCartStore } from "@/lib/store/cart-store";
 
@@ -21,11 +22,6 @@ import { useCartStore } from "@/lib/store/cart-store";
  * Money is in integer minor units throughout; format only at the edge with
  * `formatPrice`. Static layout (no Motion) so there is zero CLS as totals change.
  */
-
-/** Free shipping at/above this subtotal (minor units); flat fee otherwise. */
-const FREE_SHIPPING_THRESHOLD = 7_500_000;
-const SHIPPING_FEE = 1_500;
-const TAX_RATE = 0.08;
 
 interface SummaryRow {
   id: string;
@@ -95,9 +91,7 @@ export function OrderSummary() {
     return { rows: resolved, subtotal: sum };
   }, [lines, productsById]);
 
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-  const tax = Math.round(subtotal * TAX_RATE);
-  const total = subtotal + shipping + tax;
+  const { shipping, tax, total } = computeOrderTotals(subtotal);
 
   return (
     <section

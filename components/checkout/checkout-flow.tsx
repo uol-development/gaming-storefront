@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -12,7 +12,11 @@ import { CheckoutStepper } from "@/components/checkout/checkout-stepper";
 import { OrderSummary } from "@/components/checkout/order-summary";
 import { useToast } from "@/lib/hooks/use-toast";
 import { useCartStore } from "@/lib/store/cart-store";
-import { getProductById, productGradient } from "@/lib/data/catalog";
+import { getStoreProductsByIdsAction } from "@/lib/data/store-actions";
+import { placeOrder as placeOrderAction } from "@/lib/data/checkout-actions";
+import type { Product } from "@/lib/data/products";
+import { productGradient } from "@/lib/data/catalog";
+import { computeOrderTotals } from "@/lib/data/pricing";
 import { formatPrice } from "@/lib/format";
 import { fade, scaleIn, stepSlide } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
@@ -47,11 +51,6 @@ const COUNTRIES = [
   "France",
   "Japan",
 ] as const;
-
-/** Free shipping at/above this subtotal (minor units); flat fee otherwise. */
-const FREE_SHIPPING_THRESHOLD = 7_500_000;
-const SHIPPING_FEE = 1_500;
-const TAX_RATE = 0.08;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EXPIRY_RE = /^(0[1-9]|1[0-2])\/\d{2}$/;
@@ -89,6 +88,30 @@ export function CheckoutFlow() {
   const lines = useCartStore((s) => s.lines);
   const clear = useCartStore((s) => s.clear);
 
+  // Resolve cart line ids to real DB products (client components never touch the
+  // server-only data layer directly). `null` = not yet loaded.
+  const [productsById, setProductsById] = useState<Map<string, Product> | null>(null);
+  const idsKey = useMemo(() => lines.map((line) => line.productId).join(","), [lines]);
+  useEffect(() => {
+    let cancelled = false;
+    const ids = idsKey.length > 0 ? idsKey.split(",") : [];
+    if (ids.length === 0) {
+      setProductsById(new Map());
+      return () => {
+        cancelled = true;
+      };
+    }
+    void getStoreProductsByIdsAction(ids).then((products) => {
+      if (cancelled) return;
+      const map = new Map<string, Product>();
+      for (const product of products) map.set(product.id, product);
+      setProductsById(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
+
   const [step, setStep] = useState<Step>(0);
   const [direction, setDirection] = useState<number>(1);
   const [placing, setPlacing] = useState(false);
@@ -101,39 +124,40 @@ export function CheckoutFlow() {
   const [saveCard, setSaveCard] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  const placeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idBase = useId();
 
   /* ---- Order totals for the confirmation recap (minor units throughout) ---- */
   const { total, confirmEmail } = useMemo(() => {
     let subtotal = 0;
-    for (const line of lines) {
-      const product = getProductById(line.productId);
-      if (!product) continue;
-      subtotal += product.price * line.quantity;
+    if (productsById) {
+      for (const line of lines) {
+        const product = productsById.get(line.productId);
+        if (!product) continue;
+        subtotal += product.price * line.quantity;
+      }
     }
-    const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-    const tax = Math.round(subtotal * TAX_RATE);
-    return { total: subtotal + shipping + tax, confirmEmail: address.email };
-  }, [lines, address.email]);
+    return { total: computeOrderTotals(subtotal).total, confirmEmail: address.email };
+  }, [lines, productsById, address.email]);
 
   /* ---- Review-step line items (resolve ids -> products, skip stale) ---- */
   const reviewRows = useMemo(() => {
     const rows: { id: string; name: string; quantity: number; gradient: string; lineTotal: number }[] =
       [];
-    for (const line of lines) {
-      const product = getProductById(line.productId);
-      if (!product) continue;
-      rows.push({
-        id: product.id,
-        name: product.name,
-        quantity: line.quantity,
-        gradient: productGradient(product),
-        lineTotal: product.price * line.quantity,
-      });
+    if (productsById) {
+      for (const line of lines) {
+        const product = productsById.get(line.productId);
+        if (!product) continue;
+        rows.push({
+          id: product.id,
+          name: product.name,
+          quantity: line.quantity,
+          gradient: productGradient(product),
+          lineTotal: product.price * line.quantity,
+        });
+      }
     }
     return rows;
-  }, [lines]);
+  }, [lines, productsById]);
 
   const setAddressField = useCallback((key: AddressKey, value: string) => {
     setAddress((prev) => ({ ...prev, [key]: value }));
@@ -199,28 +223,40 @@ export function CheckoutFlow() {
     setStep((prev) => (prev - 1) as Step);
   }, [step]);
 
-  const placeOrder = useCallback(() => {
+  const placeOrder = useCallback(async () => {
     if (placing) return;
     setPlacing(true);
-    if (placeTimer.current) clearTimeout(placeTimer.current);
-    placeTimer.current = setTimeout(() => {
-      const generated = `NX-${Math.floor(100000 + Math.random() * 900000)}`;
-      setOrderNumber(generated);
+    try {
+      const result = await placeOrderAction({
+        customer: {
+          email: address.email.trim(),
+          firstName: address.firstName.trim(),
+          lastName: address.lastName.trim(),
+        },
+        shippingAddress: {
+          line1: address.address.trim(),
+          city: address.city.trim(),
+          postal_code: address.postal.trim(),
+          country: address.country.trim(),
+        },
+        lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+      });
+      if (!result.ok || !result.orderNumber) {
+        toast.error("We couldn't place your order", {
+          description: result.error ?? "Please try again.",
+        });
+        setPlacing(false);
+        return;
+      }
+      setOrderNumber(result.orderNumber);
       setPlaced(true);
       setPlacing(false);
       toast.success("Order placed!", { description: "A confirmation email is on its way." });
-    }, 1300);
-  }, [placing, toast]);
-
-  // Clear the pending placement timer when the component unmounts.
-  useEffect(() => {
-    return () => {
-      if (placeTimer.current) {
-        clearTimeout(placeTimer.current);
-        placeTimer.current = null;
-      }
-    };
-  }, []);
+    } catch {
+      toast.error("We couldn't place your order", { description: "Please try again." });
+      setPlacing(false);
+    }
+  }, [placing, toast, address, lines]);
 
   const continueShopping = useCallback(() => {
     clear();
@@ -365,7 +401,7 @@ export function CheckoutFlow() {
             Back
           </Button>
           {step === 2 ? (
-            <Button loading={placing} onClick={placeOrder}>
+            <Button loading={placing} onClick={() => void placeOrder()}>
               Place order
             </Button>
           ) : (
