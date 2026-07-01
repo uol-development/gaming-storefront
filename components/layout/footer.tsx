@@ -166,7 +166,9 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col gap-6 border-t border-border pt-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-            <p className="text-sm text-muted-foreground">&copy; 2026 NEXUS. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()} NEXUS. All rights reserved.
+            </p>
             <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {LEGAL_LINKS.map((link) => (
                 <li key={link.label}>

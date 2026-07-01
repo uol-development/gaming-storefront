@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   type LucideIcon,
+  Mail,
   Megaphone,
   Menu,
   Package,
@@ -62,6 +63,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
     heading: "Content",
     items: [
       { label: "Featured Videos", href: "/admin/videos", icon: Video, ready: true },
+      { label: "Subscribers", href: "/admin/subscribers", icon: Mail, ready: true },
       { label: "Pages & CMS", href: "/admin/cms", icon: FileText },
       { label: "Media", href: "/admin/media", icon: ImageIcon },
       { label: "Marketing", href: "/admin/marketing", icon: Megaphone },

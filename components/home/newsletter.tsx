@@ -6,13 +6,15 @@ import { CheckCircle2 } from "lucide-react";
 import { scaleIn, shake } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { imageUrl, SECTION_IMAGE_IDS } from "@/lib/data/images";
+import { subscribeToNewsletter } from "@/lib/data/newsletter-actions";
 import { cn } from "@/lib/utils";
 
 /**
- * Email-capture panel. Network is simulated locally — a valid submit flips to a
- * success block; an invalid submit replays a horizontal shake (re-keyed each
- * attempt) and pins a static destructive ring so the feedback survives when the
- * user prefers reduced motion (the shake's x-transform is stripped to instant).
+ * Email-capture panel. A valid submit persists the subscriber via the
+ * `subscribeToNewsletter` server action then flips to a success block; an
+ * invalid submit replays a horizontal shake (re-keyed each attempt) and pins a
+ * static destructive ring so the feedback survives when the user prefers reduced
+ * motion (the shake's x-transform is stripped to instant).
  *
  * Only `transform`/`opacity` animate. The message slot reserves a fixed
  * min-height so validation text never shifts the layout (CLS ~ 0).
@@ -37,7 +39,7 @@ export function Newsletter() {
   const isSubmitting = status === "submitting";
   const isSuccess = status === "success";
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting || isSuccess) return;
 
@@ -49,11 +51,23 @@ export function Newsletter() {
       return;
     }
 
-    // Simulated local "request": flip straight through to success.
     setStatus("submitting");
     setMessage("");
-    setStatus("success");
-    setMessage("You're in. Check your inbox.");
+    try {
+      const result = await subscribeToNewsletter(email.trim(), "home");
+      if (!result.ok) {
+        setStatus("error");
+        setMessage(result.error ?? "Something went wrong. Please try again.");
+        setErrorKey((key) => key + 1);
+        return;
+      }
+      setStatus("success");
+      setMessage(result.already ? "You're already on the list." : "You're in. Check your inbox.");
+    } catch {
+      setStatus("error");
+      setMessage("Something went wrong. Please try again.");
+      setErrorKey((key) => key + 1);
+    }
   }
 
   return (
@@ -104,7 +118,7 @@ export function Newsletter() {
                 aria-live="polite"
                 className="text-sm font-medium text-foreground sm:text-base"
               >
-                You&apos;re in. Check your inbox.
+                {message || "You’re in. Check your inbox."}
               </p>
             </motion.div>
           ) : (
