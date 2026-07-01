@@ -45,16 +45,25 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Maps raw Supabase auth error text to friendlier copy; falls back to the original. */
 function friendlyAuthError(message: string): string {
-  if (message.includes("Invalid login credentials")) {
+  const m = (message ?? "").trim();
+  // A 500 / retryable fetch error serializes to an empty "{}" — usually the
+  // server failing to SEND the confirmation email (SMTP misconfigured).
+  if (m === "" || m === "{}") {
+    return "We couldn't send your verification email right now. Please try again in a moment.";
+  }
+  if (m.includes("Invalid login credentials")) {
     return "Wrong email or password.";
   }
-  if (message.includes("Email not confirmed")) {
+  if (m.includes("Email not confirmed")) {
     return "Please verify your email first — check your inbox for the link.";
   }
-  if (message.includes("User already registered")) {
+  if (m.includes("User already registered")) {
     return "An account with this email already exists. Try signing in.";
   }
-  return message;
+  if (m.toLowerCase().includes("email") && m.toLowerCase().includes("send")) {
+    return "We couldn't send the verification email. Please try again shortly.";
+  }
+  return m;
 }
 
 export function AuthModal() {
