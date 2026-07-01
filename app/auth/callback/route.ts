@@ -10,7 +10,13 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/account";
+  // Only accept a SAME-ORIGIN relative path. Blocks open-redirect / phishing
+  // payloads like //evil.com, @evil.com, https://evil.com, and backslash tricks.
+  const rawNext = searchParams.get("next") ?? "/account";
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.includes("\\")
+      ? rawNext
+      : "/account";
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

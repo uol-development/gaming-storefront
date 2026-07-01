@@ -92,6 +92,7 @@ export default async function DashboardPage() {
             <Link
               href="/"
               target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center justify-between rounded-md border border-border px-3 py-2 hover:bg-secondary"
             >
               View live store <ArrowUpRight className="size-4 text-muted-foreground" />

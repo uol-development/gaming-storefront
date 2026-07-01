@@ -93,7 +93,7 @@ export default async function ProductDetailPage({
     <main className="container mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd).replace(/</g, "\\u003c") }}
       />
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-6">
