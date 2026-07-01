@@ -9,6 +9,7 @@ import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { useCartCount } from "@/lib/store/cart-store";
 import { useWishlistCount } from "@/lib/store/wishlist-store";
 import { useUiStore } from "@/lib/store/ui-store";
+import { useAuthUser } from "@/lib/hooks/use-auth-user";
 import { CART_FLY_TARGET_ID } from "@/components/cart/fly-to-cart-layer";
 import { DesktopNav } from "./desktop-nav";
 import { MobileNav } from "./mobile-nav";
@@ -88,8 +89,18 @@ function SearchButton() {
 
 function AccountButton() {
   const openAuth = useUiStore((state) => state.openAuth);
+  const { user } = useAuthUser();
+
+  // Signed in → go to the account page; signed out → open the auth modal.
+  if (user) {
+    return (
+      <IconLink label="My account" href="/account">
+        <User className="size-5" aria-hidden />
+      </IconLink>
+    );
+  }
   return (
-    <IconButton label="Account" onClick={() => openAuth("login")}>
+    <IconButton label="Sign in" onClick={() => openAuth("login")}>
       <User className="size-5" aria-hidden />
     </IconButton>
   );
