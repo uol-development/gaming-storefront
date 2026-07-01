@@ -99,6 +99,21 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
   const supabase = createSupabaseAdminClient();
 
+  // Lightweight throttle: reject a repeat order from the same email within 20s —
+  // stops accidental double-submits and basic order spam without extra infra.
+  const { data: recent } = await supabase
+    .from("orders")
+    .select("id")
+    .ilike("customer_email", customer.email)
+    .gt("placed_at", new Date(Date.now() - 20_000).toISOString())
+    .limit(1);
+  if (recent && recent.length > 0) {
+    return {
+      ok: false,
+      error: "You just placed an order — please wait a moment before trying again.",
+    };
+  }
+
   let orderId: string | null = null;
   let orderNumber = "";
   for (let attempt = 0; attempt < 4 && !orderId; attempt++) {

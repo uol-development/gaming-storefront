@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { staggerContainer, staggerItem } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
+import { safeHref } from "@/lib/data/safe-url";
 import { BANNER_BADGE_STYLE } from "@/lib/admin/banners-schema";
 import type { StoreBanner } from "@/lib/data/banners";
 
@@ -39,12 +40,16 @@ const HEADING_BY_SIZE: Record<StoreBanner["size"], string> = {
 };
 
 function BannerCta({ banner }: { banner: StoreBanner }) {
+  // Neutralise any unsafe (javascript:/off-site) link before it becomes an href.
+  const href = safeHref(banner.ctaLink);
+  if (!href) return null;
+
   const className =
     "mt-3 inline-flex h-9 w-fit items-center rounded-md bg-white px-4 text-sm font-semibold text-black transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white";
 
-  if (banner.ctaLink.startsWith("/")) {
+  if (href.startsWith("/")) {
     return (
-      <Link href={banner.ctaLink} className={className}>
+      <Link href={href} className={className}>
         {banner.ctaText}
       </Link>
     );
@@ -52,7 +57,7 @@ function BannerCta({ banner }: { banner: StoreBanner }) {
 
   return (
     <a
-      href={banner.ctaLink}
+      href={href}
       className={className}
       target={banner.ctaNewTab ? "_blank" : undefined}
       rel={banner.ctaNewTab ? "noopener noreferrer" : undefined}

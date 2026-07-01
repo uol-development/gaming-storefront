@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { safeHref } from "@/lib/data/safe-url";
 
 export const BANNER_SIZES = ["large", "medium", "small", "tall"] as const;
 export type BannerSize = (typeof BANNER_SIZES)[number];
@@ -85,7 +86,8 @@ export function toBannerRow(input: BannerParsed): Record<string, unknown> {
     image_url: emptyToNull(input.image_url),
     image_mobile_url: emptyToNull(input.image_mobile_url),
     cta_text: emptyToNull(input.cta_text),
-    cta_link: emptyToNull(input.cta_link),
+    // Only persist a safe href (blocks javascript:/off-site/protocol-relative).
+    cta_link: emptyToNull(safeHref(input.cta_link)),
     cta_new_tab: input.cta_new_tab,
     bg_color: emptyToNull(input.bg_color),
     overlay_color: emptyToNull(input.overlay_color),
