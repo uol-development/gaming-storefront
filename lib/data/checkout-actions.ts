@@ -122,5 +122,17 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const { error: itemsError } = await supabase.from("order_items").insert(itemRows);
   if (itemsError) return { ok: false, error: itemsError.message };
 
+  // Best-effort: upsert a CRM customer record keyed by email. Never blocks the
+  // order, and stays a no-op if the customers table hasn't been created yet.
+  // ignoreDuplicates keeps any staff edits on an existing customer intact.
+  try {
+    await supabase.from("customers").upsert(
+      { email: customer.email, name: `${customer.firstName} ${customer.lastName}`.trim() },
+      { onConflict: "email", ignoreDuplicates: true },
+    );
+  } catch {
+    // customers table optional — ignore
+  }
+
   return { ok: true, orderNumber, total: totals.total };
 }

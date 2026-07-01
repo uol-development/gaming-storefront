@@ -53,7 +53,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
     heading: "Sales",
     items: [
       { label: "Orders", href: "/admin/orders", icon: ShoppingCart, ready: true },
-      { label: "Customers", href: "/admin/customers", icon: Users },
+      { label: "Customers", href: "/admin/customers", icon: Users, ready: true },
       { label: "Coupons", href: "/admin/coupons", icon: Ticket },
     ],
   },
