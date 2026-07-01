@@ -5,6 +5,7 @@ import { Hero } from "@/components/home/hero";
 import { SectionSkeleton } from "@/components/home/section-skeleton";
 import { getStoreCategories, getStoreProducts } from "@/lib/data/store";
 import { getHomeFeaturedVideos } from "@/lib/data/videos";
+import { getBannersForPlacement } from "@/lib/data/banners";
 
 export const metadata: Metadata = {
   title: "Premium Gaming Gear",
@@ -35,6 +36,11 @@ const CategoryCards = dynamicImport(
   { loading: () => <SectionSkeleton className="h-[520px]" /> },
 );
 
+const PromoBanners = dynamicImport(
+  () => import("@/components/home/promo-banners").then((m) => m.PromoBanners),
+  { loading: () => <SectionSkeleton className="h-[520px]" /> },
+);
+
 const FlashDeals = dynamicImport(
   () => import("@/components/home/flash-deals").then((m) => m.FlashDeals),
   { loading: () => <SectionSkeleton className="h-[440px]" /> },
@@ -61,10 +67,11 @@ const Newsletter = dynamicImport(
 );
 
 export default async function HomePage() {
-  const [products, categories, featuredVideos] = await Promise.all([
+  const [products, categories, featuredVideos, promoBanners] = await Promise.all([
     getStoreProducts(),
     getStoreCategories(),
     getHomeFeaturedVideos(),
+    getBannersForPlacement("before_flash_sale"),
   ]);
   const featured = products.slice(0, 8);
   const deals = products
@@ -75,6 +82,7 @@ export default async function HomePage() {
     <>
       <Hero />
       <CategoryCards categories={categories} />
+      {promoBanners.length > 0 ? <PromoBanners banners={promoBanners} /> : null}
       <FlashDeals deals={deals} />
       <ProductGrid products={featured} />
       {featuredVideos.length > 0 ? <FeaturedVideos videos={featuredVideos} /> : null}

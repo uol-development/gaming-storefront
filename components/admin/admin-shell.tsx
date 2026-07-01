@@ -8,6 +8,7 @@ import {
   Boxes,
   ChevronDown,
   FileText,
+  GalleryHorizontalEnd,
   Image as ImageIcon,
   LayoutDashboard,
   LogOut,
@@ -62,6 +63,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
   {
     heading: "Content",
     items: [
+      { label: "Banners", href: "/admin/banners", icon: GalleryHorizontalEnd, ready: true },
       { label: "Featured Videos", href: "/admin/videos", icon: Video, ready: true },
       { label: "Subscribers", href: "/admin/subscribers", icon: Mail, ready: true },
       { label: "Pages & CMS", href: "/admin/cms", icon: FileText },
