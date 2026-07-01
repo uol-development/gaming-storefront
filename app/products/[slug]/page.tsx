@@ -9,10 +9,12 @@ import {
   getStoreRelated,
 } from "@/lib/data/store";
 import { formatCompact, stockStatus } from "@/lib/format";
+import { getProductVideos } from "@/lib/data/videos";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { SpecAccordion } from "@/components/product/spec-accordion";
 import { StickyBuyPanel } from "@/components/product/sticky-buy-panel";
 import { ProductCard } from "@/components/product/product-card";
+import { FeaturedVideos } from "@/components/home/featured-videos";
 
 const SITE_URL = "https://gaming-storefront-eight.vercel.app";
 
@@ -46,7 +48,10 @@ export default async function ProductDetailPage({
   if (!product) notFound();
 
   const specGroups = productSpecGroups(product);
-  const related = await getStoreRelated(product);
+  const [related, productVideos] = await Promise.all([
+    getStoreRelated(product),
+    getProductVideos(product.id),
+  ]);
   const availability = stockStatus(product.stock);
   const availabilityDotClass =
     availability.tone === "in"
@@ -179,6 +184,18 @@ export default async function ProductDetailPage({
           <StickyBuyPanel product={product} />
         </div>
       </div>
+
+      {/* Videos featuring this product */}
+      {productVideos.length > 0 ? (
+        <div className="mt-16">
+          <FeaturedVideos
+            videos={productVideos}
+            title="In the videos"
+            subtitle="Watch this product in action"
+            container={false}
+          />
+        </div>
+      ) : null}
 
       {/* Related */}
       {related.length > 0 ? (

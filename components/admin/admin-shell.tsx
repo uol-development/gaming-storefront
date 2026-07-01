@@ -22,6 +22,7 @@ import {
   Tag,
   Ticket,
   Users,
+  Video,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
   {
     heading: "Content",
     items: [
+      { label: "Featured Videos", href: "/admin/videos", icon: Video, ready: true },
       { label: "Pages & CMS", href: "/admin/cms", icon: FileText },
       { label: "Media", href: "/admin/media", icon: ImageIcon },
       { label: "Marketing", href: "/admin/marketing", icon: Megaphone },

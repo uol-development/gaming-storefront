@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Hero } from "@/components/home/hero";
 import { SectionSkeleton } from "@/components/home/section-skeleton";
 import { getStoreCategories, getStoreProducts } from "@/lib/data/store";
+import { getHomeFeaturedVideos } from "@/lib/data/videos";
 
 export const metadata: Metadata = {
   title: "Premium Gaming Gear",
@@ -40,6 +41,11 @@ const ProductGrid = dynamic(
   { loading: () => <SectionSkeleton className="h-[640px]" /> },
 );
 
+const FeaturedVideos = dynamic(
+  () => import("@/components/home/featured-videos").then((m) => m.FeaturedVideos),
+  { loading: () => <SectionSkeleton className="h-[560px]" /> },
+);
+
 const BrandCarousel = dynamic(
   () => import("@/components/home/brand-carousel").then((m) => m.BrandCarousel),
   { loading: () => <SectionSkeleton className="h-[112px]" /> },
@@ -51,9 +57,10 @@ const Newsletter = dynamic(
 );
 
 export default async function HomePage() {
-  const [products, categories] = await Promise.all([
+  const [products, categories, featuredVideos] = await Promise.all([
     getStoreProducts(),
     getStoreCategories(),
+    getHomeFeaturedVideos(),
   ]);
   const featured = products.slice(0, 8);
   const deals = products
@@ -66,6 +73,7 @@ export default async function HomePage() {
       <CategoryCards categories={categories} />
       <FlashDeals deals={deals} />
       <ProductGrid products={featured} />
+      {featuredVideos.length > 0 ? <FeaturedVideos videos={featuredVideos} /> : null}
       <BrandCarousel />
       <Newsletter />
     </>
