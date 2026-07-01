@@ -43,6 +43,17 @@ function revalidateVideos(id?: string): void {
   revalidatePath("/"); // homepage Featured in Videos section
 }
 
+/** Refresh the linked product's page so its "In the videos" section updates. */
+async function revalidateProductPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  productId: string | null | undefined,
+): Promise<void> {
+  if (!productId) return;
+  const { data } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
+  const slug = (data as { slug?: string } | null)?.slug;
+  if (slug) revalidatePath(`/products/${slug}`);
+}
+
 /** Fetch title/channel/thumbnail from YouTube's public oEmbed endpoint (no key). */
 async function fetchOEmbed(
   url: string,
@@ -131,6 +142,7 @@ export async function createVideo(input: VideoInput): Promise<ActionResult> {
     summary: `Added video "${String(row.title)}"`,
   });
   revalidateVideos();
+  await revalidateProductPage(supabase, parsed.data.product_id ?? null);
   return { ok: true, id };
 }
 
@@ -152,6 +164,7 @@ export async function updateVideo(id: string, input: VideoInput): Promise<Action
     summary: `Updated video "${String(row.title)}"`,
   });
   revalidateVideos(id);
+  await revalidateProductPage(supabase, parsed.data.product_id ?? null);
   return { ok: true, id };
 }
 
