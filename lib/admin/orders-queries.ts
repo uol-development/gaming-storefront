@@ -33,6 +33,8 @@ export interface AdminOrderDetail {
   customer_phone: string | null;
   status: string;
   payment_status: string;
+  payment_method: string | null;
+  delivery_zone: string | null;
   currency: string;
   subtotal: number;
   shipping: number;
@@ -159,7 +161,9 @@ export async function getOrderById(id: string): Promise<AdminOrderDetail | null>
     customer_phone: toStrOrNull(raw.customer_phone),
     status: String(raw.status ?? ""),
     payment_status: String(raw.payment_status ?? ""),
-    currency: String(raw.currency ?? "USD"),
+    payment_method: toStrOrNull(raw.payment_method),
+    delivery_zone: toStrOrNull(raw.delivery_zone),
+    currency: String(raw.currency ?? "BDT"),
     subtotal: toNum(raw.subtotal),
     shipping: toNum(raw.shipping),
     tax: toNum(raw.tax),

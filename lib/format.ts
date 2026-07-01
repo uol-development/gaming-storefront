@@ -1,14 +1,20 @@
 /**
- * Formatting helpers. Prices are stored as integer minor units (cents) to avoid
- * floating-point drift; format at the edge only.
+ * Formatting helpers. Prices are stored as integer minor units (poisha; 1 ৳ =
+ * 100) to avoid floating-point drift; format at the edge only. Default currency
+ * is Bangladeshi Taka (৳) with South-Asian (lakh/crore) digit grouping.
  */
 
-export function formatPrice(minorUnits: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(minorUnits / 100);
+export function formatPrice(minorUnits: number, currency = "BDT"): string {
+  const value = minorUnits / 100;
+  if (currency === "USD") {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+  // ৳ with en-IN grouping (3,60,000) — reliable Taka sign across environments.
+  return `৳${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(value))}`;
 }
 
 /** Compact counts, e.g. 1280 -> "1.3K". */

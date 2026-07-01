@@ -623,9 +623,9 @@ export function ProductForm(props: ProductFormProps) {
           </Section>
 
           {/* Pricing */}
-          <Section title="Pricing" description="Amounts are entered in dollars.">
+          <Section title="Pricing" description="Amounts are entered in Taka (৳).">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="Price ($)" htmlFor="price" error={errors.price?.message}>
+              <Field label="Price (৳)" htmlFor="price" error={errors.price?.message}>
                 <input
                   id="price"
                   type="number"
@@ -640,7 +640,7 @@ export function ProductForm(props: ProductFormProps) {
               </Field>
 
               <Field
-                label="Sale price ($)"
+                label="Sale price (৳)"
                 htmlFor="sale_price"
                 error={errors.sale_price?.message}
               >
@@ -656,7 +656,7 @@ export function ProductForm(props: ProductFormProps) {
               </Field>
 
               <Field
-                label="Cost price ($)"
+                label="Cost price (৳)"
                 htmlFor="cost_price"
                 error={errors.cost_price?.message}
               >

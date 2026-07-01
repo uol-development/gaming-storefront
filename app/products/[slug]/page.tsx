@@ -77,7 +77,7 @@ export default async function ProductDetailPage({
     offers: {
       "@type": "Offer",
       price: (product.price / 100).toFixed(2),
-      priceCurrency: "USD",
+      priceCurrency: "BDT",
       availability:
         product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: `${SITE_URL}/products/${product.slug}`,

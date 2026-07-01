@@ -6,14 +6,16 @@ import { formatPrice } from "@/lib/format";
 import { productGradient, productImageUrl } from "@/lib/data/catalog";
 import { getStoreProductsByIdsAction } from "@/lib/data/store-actions";
 import { computeOrderTotals } from "@/lib/data/pricing";
+import { DELIVERY_ZONE_LABEL } from "@/lib/data/bd";
+import type { DeliveryZone } from "@/lib/data/bd";
 import type { Product } from "@/lib/data/products";
 import { useCartStore } from "@/lib/store/cart-store";
 
 /**
  * Checkout order-totals card. Reads the cart store, resolves each line to a real
  * product from the live catalog (skipping any stale/unknown id), and renders the
- * item list plus the subtotal / shipping / tax / total breakdown. No props — it
- * owns its own data.
+ * item list plus the subtotal / delivery / total breakdown. Takes the current
+ * delivery `zone` so the shipping fee matches the chosen shipping division.
  *
  * Resolution runs through the server action `getStoreProductsByIdsAction`
  * (client components never touch the server-only data layer directly). A
@@ -32,7 +34,7 @@ interface SummaryRow {
   lineTotal: number;
 }
 
-export function OrderSummary() {
+export function OrderSummary({ zone }: { zone: DeliveryZone }) {
   const lines = useCartStore((s) => s.lines);
 
   // Resolved products keyed by id. `null` = not yet loaded (loading state).
@@ -91,7 +93,7 @@ export function OrderSummary() {
     return { rows: resolved, subtotal: sum };
   }, [lines, productsById]);
 
-  const { shipping, tax, total } = computeOrderTotals(subtotal);
+  const { shipping, total } = computeOrderTotals(subtotal, zone);
 
   return (
     <section
@@ -144,14 +146,10 @@ export function OrderSummary() {
           <dd className="tabular-nums text-foreground">{formatPrice(subtotal)}</dd>
         </div>
         <div className="flex items-center justify-between">
-          <dt className="text-muted-foreground">Shipping</dt>
+          <dt className="text-muted-foreground">Delivery · {DELIVERY_ZONE_LABEL[zone]}</dt>
           <dd className={cn("tabular-nums", shipping === 0 ? "text-success" : "text-foreground")}>
             {shipping === 0 ? "FREE" : formatPrice(shipping)}
           </dd>
-        </div>
-        <div className="flex items-center justify-between">
-          <dt className="text-muted-foreground">Tax</dt>
-          <dd className="tabular-nums text-foreground">{formatPrice(tax)}</dd>
         </div>
         <div className="flex items-center justify-between border-t border-border pt-2">
           <dt className="font-semibold text-foreground">Total</dt>

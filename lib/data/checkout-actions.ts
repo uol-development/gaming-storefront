@@ -4,12 +4,14 @@ import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStoreProductsByIds } from "@/lib/data/store";
 import { computeOrderTotals } from "@/lib/data/pricing";
+import { BD_DIVISIONS, BD_PHONE_RE } from "@/lib/data/bd";
 
 /**
- * Public checkout order creation. Runs on the server and writes the order with
- * the service-role client (anonymous shoppers can't satisfy the staff-only RLS
- * on `orders`). Prices/totals are recomputed from authoritative DB product data
- * — client-sent amounts are never trusted.
+ * Public checkout order creation (Bangladesh). Runs on the server and writes the
+ * order with the service-role client (anonymous shoppers can't satisfy the
+ * staff-only RLS on `orders`). Prices/totals are recomputed from authoritative
+ * DB product data — client-sent amounts are never trusted. Delivery is charged
+ * by zone; Cash-on-Delivery orders are created unpaid, wallet/card as paid.
  */
 
 const lineSchema = z.object({
@@ -22,13 +24,18 @@ const placeOrderSchema = z.object({
     email: z.string().email(),
     firstName: z.string().trim().min(1),
     lastName: z.string().trim().min(1),
+    phone: z.string().trim().regex(BD_PHONE_RE, "Enter a valid Bangladeshi mobile number"),
   }),
   shippingAddress: z.object({
     line1: z.string().trim().min(1),
+    area: z.string().trim().min(1),
     city: z.string().trim().min(1),
-    postal_code: z.string().trim().min(1),
-    country: z.string().trim().min(1),
+    division: z.enum(BD_DIVISIONS),
+    postal_code: z.string().trim().optional().or(z.literal("")),
   }),
+  deliveryZone: z.enum(["inside_dhaka", "outside_dhaka"]),
+  paymentMethod: z.enum(["cod", "bkash", "nagad", "rocket", "card"]),
+  paymentRef: z.string().trim().max(120).optional().or(z.literal("")),
   lines: z.array(lineSchema).min(1),
 });
 
@@ -52,7 +59,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid order details." };
   }
-  const { customer, shippingAddress, lines } = parsed.data;
+  const { customer, shippingAddress, deliveryZone, paymentMethod, paymentRef, lines } = parsed.data;
 
   // Authoritative product data — never trust client-sent prices.
   const ids = Array.from(new Set(lines.map((l) => l.productId)));
@@ -81,11 +88,20 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   }
 
   const subtotal = items.reduce((sum, it) => sum + it.line_total, 0);
-  const totals = computeOrderTotals(subtotal);
+  const totals = computeOrderTotals(subtotal, deliveryZone);
+  const paymentStatus = paymentMethod === "cod" ? "unpaid" : "paid";
+
+  const address = {
+    line1: shippingAddress.line1,
+    area: shippingAddress.area,
+    city: shippingAddress.city,
+    division: shippingAddress.division,
+    postal_code: shippingAddress.postal_code ?? "",
+    country: "Bangladesh",
+  };
 
   const supabase = createSupabaseAdminClient();
 
-  // Insert the order, retrying on the (rare) order_number unique collision.
   let orderId: string | null = null;
   let orderNumber = "";
   for (let attempt = 0; attempt < 4 && !orderId; attempt++) {
@@ -96,15 +112,20 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
         order_number: orderNumber,
         customer_name: `${customer.firstName} ${customer.lastName}`.trim(),
         customer_email: customer.email,
+        customer_phone: customer.phone,
         status: "pending",
-        payment_status: "paid",
+        payment_status: paymentStatus,
+        payment_method: paymentMethod,
+        payment_ref: paymentRef && paymentRef.length > 0 ? paymentRef : null,
+        delivery_zone: deliveryZone,
+        currency: "BDT",
         subtotal: totals.subtotal,
         shipping: totals.shipping,
         tax: totals.tax,
         discount: 0,
         total: totals.total,
-        shipping_address: shippingAddress,
-        billing_address: shippingAddress,
+        shipping_address: address,
+        billing_address: address,
       })
       .select("id")
       .single();
@@ -122,12 +143,14 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const { error: itemsError } = await supabase.from("order_items").insert(itemRows);
   if (itemsError) return { ok: false, error: itemsError.message };
 
-  // Best-effort: upsert a CRM customer record keyed by email. Never blocks the
-  // order, and stays a no-op if the customers table hasn't been created yet.
-  // ignoreDuplicates keeps any staff edits on an existing customer intact.
+  // Best-effort CRM upsert keyed by email (never blocks the order).
   try {
     await supabase.from("customers").upsert(
-      { email: customer.email, name: `${customer.firstName} ${customer.lastName}`.trim() },
+      {
+        email: customer.email,
+        name: `${customer.firstName} ${customer.lastName}`.trim(),
+        phone: customer.phone,
+      },
       { onConflict: "email", ignoreDuplicates: true },
     );
   } catch {

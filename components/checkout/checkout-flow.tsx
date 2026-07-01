@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { CheckoutStepper } from "@/components/checkout/checkout-stepper";
 import { OrderSummary } from "@/components/checkout/order-summary";
 import { useToast } from "@/lib/hooks/use-toast";
@@ -17,22 +15,36 @@ import { placeOrder as placeOrderAction } from "@/lib/data/checkout-actions";
 import type { Product } from "@/lib/data/products";
 import { productGradient } from "@/lib/data/catalog";
 import { computeOrderTotals } from "@/lib/data/pricing";
+import {
+  BD_DIVISIONS,
+  BD_PHONE_RE,
+  DELIVERY_ZONE_LABEL,
+  PAYMENT_METHOD_LABEL,
+  PAYMENT_OPTIONS,
+  isBdDivision,
+  paymentKind,
+  zoneForDivision,
+} from "@/lib/data/bd";
+import type { BdDivision, PaymentMethod } from "@/lib/data/bd";
 import { formatPrice } from "@/lib/format";
 import { fade, scaleIn, stepSlide } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
 import { cn } from "@/lib/utils";
 
 /**
- * Multi-step checkout orchestrator — the body of the /checkout page.
+ * Multi-step checkout orchestrator — the body of the /checkout page (Bangladesh).
  *
  * Three steps (Address / Payment / Review) cross under a single AnimatePresence
  * with a direction-aware `stepSlide` transition that degrades to an opacity-only
  * `fade` when the user prefers reduced motion (stepSlide is a FUNCTION variant
  * and is therefore NOT stripped by `variants()`, so we branch explicitly).
  *
- * Order placement is simulated via a setTimeout that is always cleared on unmount
- * through a ref, then swaps the whole grid for a confirmation card. All money is
- * in integer minor units and only formatted at the edge with `formatPrice`.
+ * The address is fixed to Bangladesh: the division drives the delivery zone
+ * (`zoneForDivision`) which in turn drives the shipping fee via
+ * `computeOrderTotals`. Payment is a method selector (COD / bKash / Nagad /
+ * Rocket / Card) whose extra fields — and validation — depend on the method's
+ * `paymentKind`. All money is in integer minor units (poisha) and only formatted
+ * at the edge with `formatPrice` (which renders ৳).
  *
  * No CLS: every field reserves a fixed-height error slot whether or not an error
  * is present, so showing/clearing validation never reflows the form.
@@ -42,42 +54,52 @@ type Step = 0 | 1 | 2;
 
 const STEP_LABELS = ["Address", "Payment", "Review"] as const;
 
-const COUNTRIES = [
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Australia",
-  "Germany",
-  "France",
-  "Japan",
-] as const;
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EXPIRY_RE = /^(0[1-9]|1[0-2])\/\d{2}$/;
 
-type AddressKey = "email" | "firstName" | "lastName" | "address" | "city" | "postal" | "country";
-type PaymentKey = "cardName" | "cardNumber" | "expiry" | "cvc";
+const BD_PHONE_MESSAGE = "Enter a valid Bangladeshi mobile number, e.g. 01712345678";
+
+type AddressKey =
+  | "email"
+  | "firstName"
+  | "lastName"
+  | "phone"
+  | "line1"
+  | "area"
+  | "city"
+  | "division"
+  | "postal";
+type PaymentKey = "cardName" | "cardNumber" | "expiry" | "cvc" | "walletNumber" | "walletTxn";
 type FieldKey = AddressKey | PaymentKey;
 
 type Address = Record<AddressKey, string>;
-type Payment = Record<PaymentKey, string>;
+type PaymentFields = Record<Exclude<PaymentKey, never>, string>;
 type Errors = Partial<Record<FieldKey, string>>;
+
+interface PaymentState extends PaymentFields {
+  method: PaymentMethod;
+}
 
 const EMPTY_ADDRESS: Address = {
   email: "",
   firstName: "",
   lastName: "",
-  address: "",
+  phone: "",
+  line1: "",
+  area: "",
   city: "",
+  division: "Dhaka",
   postal: "",
-  country: "United States",
 };
 
-const EMPTY_PAYMENT: Payment = {
+const EMPTY_PAYMENT: PaymentState = {
+  method: "cod",
   cardName: "",
   cardNumber: "",
   expiry: "",
   cvc: "",
+  walletNumber: "",
+  walletTxn: "",
 };
 
 export function CheckoutFlow() {
@@ -119,12 +141,13 @@ export function CheckoutFlow() {
   const [orderNumber, setOrderNumber] = useState("");
 
   const [address, setAddress] = useState<Address>(EMPTY_ADDRESS);
-  const [payment, setPayment] = useState<Payment>(EMPTY_PAYMENT);
-  const [billingSame, setBillingSame] = useState(true);
-  const [saveCard, setSaveCard] = useState(false);
+  const [payment, setPayment] = useState<PaymentState>(EMPTY_PAYMENT);
   const [errors, setErrors] = useState<Errors>({});
 
   const idBase = useId();
+
+  // Delivery zone is derived reactively from the chosen division.
+  const zone = zoneForDivision(address.division);
 
   /* ---- Order totals for the confirmation recap (minor units throughout) ---- */
   const { total, confirmEmail } = useMemo(() => {
@@ -136,8 +159,8 @@ export function CheckoutFlow() {
         subtotal += product.price * line.quantity;
       }
     }
-    return { total: computeOrderTotals(subtotal).total, confirmEmail: address.email };
-  }, [lines, productsById, address.email]);
+    return { total: computeOrderTotals(subtotal, zone).total, confirmEmail: address.email };
+  }, [lines, productsById, address.email, zone]);
 
   /* ---- Review-step line items (resolve ids -> products, skip stale) ---- */
   const reviewRows = useMemo(() => {
@@ -179,6 +202,21 @@ export function CheckoutFlow() {
     });
   }, []);
 
+  const setPaymentMethod = useCallback((method: PaymentMethod) => {
+    setPayment((prev) => ({ ...prev, method }));
+    // Switching method invalidates any per-method field errors.
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.cardName;
+      delete next.cardNumber;
+      delete next.expiry;
+      delete next.cvc;
+      delete next.walletNumber;
+      delete next.walletTxn;
+      return next;
+    });
+  }, []);
+
   const validateStep = useCallback(
     (current: Step): Errors => {
       const next: Errors = {};
@@ -186,17 +224,24 @@ export function CheckoutFlow() {
         if (!EMAIL_RE.test(address.email.trim())) next.email = "Enter a valid email address.";
         if (address.firstName.trim().length === 0) next.firstName = "First name is required.";
         if (address.lastName.trim().length === 0) next.lastName = "Last name is required.";
-        if (address.address.trim().length === 0) next.address = "Street address is required.";
-        if (address.city.trim().length === 0) next.city = "City is required.";
-        if (address.postal.trim().length === 0) next.postal = "Postal code is required.";
-        if (address.country.trim().length === 0) next.country = "Select a country.";
+        if (!BD_PHONE_RE.test(address.phone.trim())) next.phone = BD_PHONE_MESSAGE;
+        if (address.line1.trim().length === 0) next.line1 = "Address is required.";
+        if (address.area.trim().length === 0) next.area = "Area / Thana is required.";
+        if (address.city.trim().length === 0) next.city = "City / District is required.";
+        if (!isBdDivision(address.division)) next.division = "Select a division.";
       } else if (current === 1) {
-        if (payment.cardName.trim().length === 0) next.cardName = "Name on card is required.";
-        const digits = payment.cardNumber.replace(/\D/g, "");
-        if (digits.length < 12 || digits.length > 19) next.cardNumber = "Enter a valid card number.";
-        if (!EXPIRY_RE.test(payment.expiry.trim())) next.expiry = "Use MM/YY format.";
-        const cvc = payment.cvc.trim();
-        if (!/^\d{3,4}$/.test(cvc)) next.cvc = "Enter a 3 or 4 digit code.";
+        const kind = paymentKind(payment.method);
+        if (kind === "wallet") {
+          if (!BD_PHONE_RE.test(payment.walletNumber.trim())) next.walletNumber = BD_PHONE_MESSAGE;
+        } else if (kind === "card") {
+          if (payment.cardName.trim().length === 0) next.cardName = "Name on card is required.";
+          const digits = payment.cardNumber.replace(/\D/g, "");
+          if (digits.length < 12 || digits.length > 19) next.cardNumber = "Enter a valid card number.";
+          if (!EXPIRY_RE.test(payment.expiry.trim())) next.expiry = "Use MM/YY format.";
+          const cvc = payment.cvc.trim();
+          if (!/^\d{3,4}$/.test(cvc)) next.cvc = "Enter a 3 or 4 digit code.";
+        }
+        // "cod": no extra fields to validate.
       }
       return next;
     },
@@ -227,18 +272,30 @@ export function CheckoutFlow() {
     if (placing) return;
     setPlacing(true);
     try {
+      const kind = paymentKind(payment.method);
+      const paymentRef =
+        kind === "wallet"
+          ? payment.walletNumber.trim()
+          : kind === "card"
+            ? `•••• ${payment.cardNumber.replace(/\D/g, "").slice(-4)}`
+            : "";
       const result = await placeOrderAction({
         customer: {
           email: address.email.trim(),
           firstName: address.firstName.trim(),
           lastName: address.lastName.trim(),
+          phone: address.phone.trim(),
         },
         shippingAddress: {
-          line1: address.address.trim(),
+          line1: address.line1.trim(),
+          area: address.area.trim(),
           city: address.city.trim(),
+          division: address.division as BdDivision,
           postal_code: address.postal.trim(),
-          country: address.country.trim(),
         },
+        deliveryZone: zone,
+        paymentMethod: payment.method,
+        paymentRef,
         lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
       });
       if (!result.ok || !result.orderNumber) {
@@ -256,12 +313,14 @@ export function CheckoutFlow() {
       toast.error("We couldn't place your order", { description: "Please try again." });
       setPlacing(false);
     }
-  }, [placing, toast, address, lines]);
+  }, [placing, toast, address, payment, zone, lines]);
 
   const continueShopping = useCallback(() => {
     clear();
     router.push("/");
   }, [clear, router]);
+
+  const isCod = payment.method === "cod";
 
   /* ---------------------------- Empty state ---------------------------- */
   if (lines.length === 0 && !placed) {
@@ -329,8 +388,14 @@ export function CheckoutFlow() {
             <dt className="text-muted-foreground">Confirmation sent to</dt>
             <dd className="min-w-0 truncate text-foreground">{confirmEmail || "your inbox"}</dd>
           </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted-foreground">Payment</dt>
+            <dd className="text-foreground">{PAYMENT_METHOD_LABEL[payment.method]}</dd>
+          </div>
           <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
-            <dt className="font-medium text-foreground">Total paid</dt>
+            <dt className="font-medium text-foreground">
+              {isCod ? "Amount due (Cash on Delivery)" : "Total paid"}
+            </dt>
             <dd className="text-base font-bold tabular-nums text-foreground">
               {formatPrice(total)}
             </dd>
@@ -368,9 +433,8 @@ export function CheckoutFlow() {
                 idBase={idBase}
                 address={address}
                 errors={errors}
-                billingSame={billingSame}
+                zone={zone}
                 onChange={setAddressField}
-                onBillingSameChange={setBillingSame}
               />
             ) : null}
 
@@ -379,19 +443,13 @@ export function CheckoutFlow() {
                 idBase={idBase}
                 payment={payment}
                 errors={errors}
-                saveCard={saveCard}
                 onChange={setPaymentField}
-                onSaveCardChange={setSaveCard}
+                onMethodChange={setPaymentMethod}
               />
             ) : null}
 
             {step === 2 ? (
-              <ReviewStep
-                address={address}
-                payment={payment}
-                billingSame={billingSame}
-                rows={reviewRows}
-              />
+              <ReviewStep address={address} payment={payment} rows={reviewRows} />
             ) : null}
           </motion.div>
         </AnimatePresence>
@@ -413,7 +471,7 @@ export function CheckoutFlow() {
       {/* RIGHT: sticky order summary */}
       <aside className="min-w-0">
         <div className="lg:sticky lg:top-24">
-          <OrderSummary />
+          <OrderSummary zone={zone} />
         </div>
       </aside>
     </div>
@@ -431,7 +489,7 @@ interface FieldProps {
   error?: string;
   type?: string;
   autoComplete?: string;
-  inputMode?: "text" | "numeric" | "email";
+  inputMode?: "text" | "numeric" | "email" | "tel";
   placeholder?: string;
   maxLength?: number;
   className?: string;
@@ -484,33 +542,28 @@ function Field({
 }
 
 /* ================================================================== *
- * Step 0 — Address
+ * Step 0 — Address (Bangladesh)
  * ================================================================== */
 
 interface AddressStepProps {
   idBase: string;
   address: Address;
   errors: Errors;
-  billingSame: boolean;
+  zone: ReturnType<typeof zoneForDivision>;
   onChange: (key: AddressKey, value: string) => void;
-  onBillingSameChange: (checked: boolean) => void;
 }
 
-function AddressStep({
-  idBase,
-  address,
-  errors,
-  billingSame,
-  onChange,
-  onBillingSameChange,
-}: AddressStepProps) {
-  const countryId = `${idBase}-country`;
-  const countryErrorId = `${countryId}-error`;
-  const countryInvalid = Boolean(errors.country);
+function AddressStep({ idBase, address, errors, zone, onChange }: AddressStepProps) {
+  const divisionId = `${idBase}-division`;
+  const divisionErrorId = `${divisionId}-error`;
+  const divisionHelpId = `${divisionId}-help`;
+  const divisionInvalid = Boolean(errors.division);
   return (
     <div className="space-y-1">
       <h3 className="text-base font-semibold text-foreground">Shipping address</h3>
-      <p className="pb-3 text-sm text-muted-foreground">Where should we send your order?</p>
+      <p className="pb-3 text-sm text-muted-foreground">
+        Where in Bangladesh should we send your order?
+      </p>
 
       <Field
         id={`${idBase}-email`}
@@ -544,152 +597,236 @@ function AddressStep({
       </div>
 
       <Field
-        id={`${idBase}-address`}
-        label="Street address"
-        autoComplete="street-address"
-        placeholder="123 Player One Ave"
-        value={address.address}
-        error={errors.address}
-        onChange={(v) => onChange("address", v)}
+        id={`${idBase}-phone`}
+        label="Mobile number"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        placeholder="01712345678"
+        maxLength={11}
+        value={address.phone}
+        error={errors.phone}
+        onChange={(v) => onChange("phone", v)}
       />
 
-      <div className="grid gap-x-4 sm:grid-cols-3">
+      <Field
+        id={`${idBase}-line1`}
+        label="Address (house, road)"
+        autoComplete="street-address"
+        placeholder="House 12, Road 5"
+        value={address.line1}
+        error={errors.line1}
+        onChange={(v) => onChange("line1", v)}
+      />
+
+      <div className="grid gap-x-4 sm:grid-cols-2">
+        <Field
+          id={`${idBase}-area`}
+          label="Area / Thana"
+          autoComplete="address-level3"
+          placeholder="Gulshan"
+          value={address.area}
+          error={errors.area}
+          onChange={(v) => onChange("area", v)}
+        />
         <Field
           id={`${idBase}-city`}
-          label="City"
+          label="City / District"
           autoComplete="address-level2"
-          className="sm:col-span-1"
+          placeholder="Dhaka"
           value={address.city}
           error={errors.city}
           onChange={(v) => onChange("city", v)}
         />
+      </div>
+
+      <div className="grid gap-x-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label htmlFor={divisionId} className="block text-sm font-medium text-foreground">
+            Division
+          </label>
+          <select
+            id={divisionId}
+            value={address.division}
+            aria-invalid={divisionInvalid || undefined}
+            aria-describedby={divisionInvalid ? divisionErrorId : divisionHelpId}
+            onChange={(event) => onChange("division", event.target.value)}
+            className={cn(
+              "h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              divisionInvalid ? "border-destructive ring-1 ring-destructive" : "border-border",
+            )}
+          >
+            {BD_DIVISIONS.map((division) => (
+              <option key={division} value={division}>
+                {division}
+              </option>
+            ))}
+          </select>
+          {divisionInvalid ? (
+            <p id={divisionErrorId} className="min-h-4 text-xs leading-4 text-destructive">
+              {errors.division ?? ""}
+            </p>
+          ) : (
+            <p id={divisionHelpId} className="min-h-4 text-xs leading-4 text-muted-foreground">
+              Delivery: {DELIVERY_ZONE_LABEL[zone]}
+            </p>
+          )}
+        </div>
         <Field
           id={`${idBase}-postal`}
-          label="Postal code"
+          label="Postal code (optional)"
           autoComplete="postal-code"
-          className="sm:col-span-1"
+          placeholder="1212"
           value={address.postal}
           error={errors.postal}
           onChange={(v) => onChange("postal", v)}
         />
-        <div className="space-y-1.5 sm:col-span-1">
-          <label htmlFor={countryId} className="block text-sm font-medium text-foreground">
-            Country
-          </label>
-          <select
-            id={countryId}
-            value={address.country}
-            aria-invalid={countryInvalid || undefined}
-            aria-describedby={countryInvalid ? countryErrorId : undefined}
-            onChange={(event) => onChange("country", event.target.value)}
-            className={cn(
-              "h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              countryInvalid ? "border-destructive ring-1 ring-destructive" : "border-border",
-            )}
-          >
-            {COUNTRIES.map((country) => (
-              <option key={country} value={country}>
-                {country}
-              </option>
-            ))}
-          </select>
-          <p id={countryErrorId} className="min-h-4 text-xs leading-4 text-destructive">
-            {errors.country ?? ""}
-          </p>
-        </div>
       </div>
 
-      <div className="pt-1">
-        <Checkbox
-          label="Billing address same as shipping"
-          checked={billingSame}
-          onCheckedChange={onBillingSameChange}
-        />
-      </div>
+      <p className="pt-1 text-xs text-muted-foreground">Country: Bangladesh</p>
     </div>
   );
 }
 
 /* ================================================================== *
- * Step 1 — Payment
+ * Step 1 — Payment (Bangladesh methods)
  * ================================================================== */
 
 interface PaymentStepProps {
   idBase: string;
-  payment: Payment;
+  payment: PaymentState;
   errors: Errors;
-  saveCard: boolean;
   onChange: (key: PaymentKey, value: string) => void;
-  onSaveCardChange: (checked: boolean) => void;
+  onMethodChange: (method: PaymentMethod) => void;
 }
 
-function PaymentStep({
-  idBase,
-  payment,
-  errors,
-  saveCard,
-  onChange,
-  onSaveCardChange,
-}: PaymentStepProps) {
+function PaymentStep({ idBase, payment, errors, onChange, onMethodChange }: PaymentStepProps) {
+  const kind = paymentKind(payment.method);
+  const walletLabel = PAYMENT_METHOD_LABEL[payment.method];
   return (
     <div className="space-y-1">
       <h3 className="text-base font-semibold text-foreground">Payment</h3>
-      <p className="pb-3 text-sm text-muted-foreground">All transactions are secure and encrypted.</p>
+      <p className="pb-3 text-sm text-muted-foreground">
+        Choose how you&apos;d like to pay for your order.
+      </p>
 
-      <Field
-        id={`${idBase}-cardName`}
-        label="Name on card"
-        autoComplete="cc-name"
-        placeholder="Jordan Smith"
-        value={payment.cardName}
-        error={errors.cardName}
-        onChange={(v) => onChange("cardName", v)}
-      />
+      <fieldset className="space-y-3">
+        <legend className="sr-only">Payment method</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {PAYMENT_OPTIONS.map((option) => {
+            const selected = payment.method === option.value;
+            const optionId = `${idBase}-pm-${option.value}`;
+            return (
+              <label
+                key={option.value}
+                htmlFor={optionId}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-xl border bg-card p-4 transition-colors",
+                  "focus-within:ring-2 focus-within:ring-ring",
+                  selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50",
+                )}
+              >
+                <input
+                  id={optionId}
+                  type="radio"
+                  name={`${idBase}-payment-method`}
+                  value={option.value}
+                  checked={selected}
+                  onChange={() => onMethodChange(option.value)}
+                  className="mt-0.5 size-4 shrink-0 accent-primary focus-visible:outline-none"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-foreground">{option.label}</span>
+                  <span className="block text-xs text-muted-foreground">{option.hint}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
 
-      <Field
-        id={`${idBase}-cardNumber`}
-        label="Card number"
-        inputMode="numeric"
-        autoComplete="cc-number"
-        placeholder="1234 5678 9012 3456"
-        maxLength={23}
-        value={payment.cardNumber}
-        error={errors.cardNumber}
-        onChange={(v) => onChange("cardNumber", v)}
-      />
+      <div className="pt-4">
+        {kind === "wallet" ? (
+          <div className="space-y-1">
+            <Field
+              id={`${idBase}-walletNumber`}
+              label={`${walletLabel} account number`}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="01XXXXXXXXX"
+              maxLength={11}
+              value={payment.walletNumber}
+              error={errors.walletNumber}
+              onChange={(v) => onChange("walletNumber", v)}
+            />
+            <Field
+              id={`${idBase}-walletTxn`}
+              label="Transaction ID (optional)"
+              autoComplete="off"
+              placeholder="e.g. 8N7A6B5C4D"
+              value={payment.walletTxn}
+              error={errors.walletTxn}
+              onChange={(v) => onChange("walletTxn", v)}
+            />
+          </div>
+        ) : null}
 
-      <div className="grid gap-x-4 sm:grid-cols-2">
-        <Field
-          id={`${idBase}-expiry`}
-          label="Expiry (MM/YY)"
-          inputMode="numeric"
-          autoComplete="cc-exp"
-          placeholder="MM/YY"
-          maxLength={5}
-          value={payment.expiry}
-          error={errors.expiry}
-          onChange={(v) => onChange("expiry", v)}
-        />
-        <Field
-          id={`${idBase}-cvc`}
-          label="CVC"
-          inputMode="numeric"
-          autoComplete="cc-csc"
-          placeholder="123"
-          maxLength={4}
-          value={payment.cvc}
-          error={errors.cvc}
-          onChange={(v) => onChange("cvc", v)}
-        />
-      </div>
+        {kind === "card" ? (
+          <div className="space-y-1">
+            <Field
+              id={`${idBase}-cardName`}
+              label="Name on card"
+              autoComplete="cc-name"
+              placeholder="Jordan Smith"
+              value={payment.cardName}
+              error={errors.cardName}
+              onChange={(v) => onChange("cardName", v)}
+            />
 
-      <div className="pt-1">
-        <Switch
-          label="Save card for next time"
-          checked={saveCard}
-          onCheckedChange={onSaveCardChange}
-        />
+            <Field
+              id={`${idBase}-cardNumber`}
+              label="Card number"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder="1234 5678 9012 3456"
+              maxLength={23}
+              value={payment.cardNumber}
+              error={errors.cardNumber}
+              onChange={(v) => onChange("cardNumber", v)}
+            />
+
+            <div className="grid gap-x-4 sm:grid-cols-2">
+              <Field
+                id={`${idBase}-expiry`}
+                label="Expiry (MM/YY)"
+                inputMode="numeric"
+                autoComplete="cc-exp"
+                placeholder="MM/YY"
+                maxLength={5}
+                value={payment.expiry}
+                error={errors.expiry}
+                onChange={(v) => onChange("expiry", v)}
+              />
+              <Field
+                id={`${idBase}-cvc`}
+                label="CVC"
+                inputMode="numeric"
+                autoComplete="cc-csc"
+                placeholder="123"
+                maxLength={4}
+                value={payment.cvc}
+                error={errors.cvc}
+                onChange={(v) => onChange("cvc", v)}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {kind === "cod" ? (
+          <p className="text-sm text-muted-foreground">Pay in cash when your order arrives.</p>
+        ) : null}
       </div>
     </div>
   );
@@ -701,18 +838,21 @@ function PaymentStep({
 
 interface ReviewStepProps {
   address: Address;
-  payment: Payment;
-  billingSame: boolean;
+  payment: PaymentState;
   rows: { id: string; name: string; quantity: number; gradient: string; lineTotal: number }[];
 }
 
-function maskCard(cardNumber: string): string {
-  const digits = cardNumber.replace(/\D/g, "");
-  const last4 = digits.slice(-4);
-  return `•••• •••• •••• ${last4 || "----"}`;
+function paymentReference(payment: PaymentState): string {
+  const kind = paymentKind(payment.method);
+  if (kind === "wallet") return payment.walletNumber || "—";
+  if (kind === "card") {
+    const last4 = payment.cardNumber.replace(/\D/g, "").slice(-4);
+    return `•••• ${last4 || "----"}`;
+  }
+  return "Cash on Delivery";
 }
 
-function ReviewStep({ address, payment, billingSame, rows }: ReviewStepProps) {
+function ReviewStep({ address, payment, rows }: ReviewStepProps) {
   const fullName = `${address.firstName} ${address.lastName}`.trim();
   return (
     <div className="space-y-5">
@@ -729,16 +869,15 @@ function ReviewStep({ address, payment, billingSame, rows }: ReviewStepProps) {
             Contact &amp; shipping
           </h4>
           <dl className="space-y-1 text-sm text-foreground">
-            <div className="truncate">{address.email || "—"}</div>
             <div>{fullName || "—"}</div>
-            <div className="text-muted-foreground">{address.address || "—"}</div>
+            <div className="text-muted-foreground">{address.phone || "—"}</div>
+            <div className="truncate text-muted-foreground">{address.email || "—"}</div>
+            <div className="text-muted-foreground">{address.line1 || "—"}</div>
+            <div className="text-muted-foreground">{address.area || "—"}</div>
             <div className="text-muted-foreground">
-              {[address.city, address.postal].filter(Boolean).join(", ") || "—"}
+              {[address.city, address.division].filter(Boolean).join(", ") || "—"}
             </div>
-            <div className="text-muted-foreground">{address.country}</div>
-            <div className="pt-1 text-xs text-muted-foreground">
-              Billing {billingSame ? "same as shipping" : "entered separately"}
-            </div>
+            <div className="text-muted-foreground">Bangladesh</div>
           </dl>
         </section>
 
@@ -747,12 +886,9 @@ function ReviewStep({ address, payment, billingSame, rows }: ReviewStepProps) {
             Payment
           </h4>
           <dl className="space-y-1 text-sm text-foreground">
-            <div>{payment.cardName || "—"}</div>
+            <div>{PAYMENT_METHOD_LABEL[payment.method]}</div>
             <div className="font-mono tabular-nums text-muted-foreground">
-              {maskCard(payment.cardNumber)}
-            </div>
-            <div className="text-muted-foreground">
-              Expires {payment.expiry || "—"}
+              {paymentReference(payment)}
             </div>
           </dl>
         </section>

@@ -10,6 +10,12 @@ import {
   isOrderStatus,
   isPaymentStatus,
 } from "@/lib/admin/orders-schema";
+import {
+  DELIVERY_ZONE_LABEL,
+  PAYMENT_METHOD_LABEL,
+  isDeliveryZone,
+  isPaymentMethod,
+} from "@/lib/data/bd";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { OrderManager } from "@/components/admin/orders/order-manager";
@@ -33,9 +39,11 @@ function addressLine(address: Record<string, unknown>): string[] {
   const get = (key: string) => (typeof address[key] === "string" ? (address[key] as string) : "");
   const l1 = get("line1");
   const l2 = get("line2");
-  const cityState = [get("city"), get("state")].filter(Boolean).join(", ");
-  const region = [cityState, get("postal_code")].filter(Boolean).join(" ");
-  return [l1, l2, region, get("country")].filter((s) => s.trim().length > 0);
+  const area = get("area");
+  // Bangladesh: city (district) + division; legacy US orders: city + state.
+  const cityRegion = [get("city"), get("division") || get("state")].filter(Boolean).join(", ");
+  const region = [cityRegion, get("postal_code")].filter(Boolean).join(" ");
+  return [l1, l2, area, region, get("country")].filter((s) => s.trim().length > 0);
 }
 
 export default async function OrderDetailPage({
@@ -61,6 +69,14 @@ export default async function OrderDetailPage({
     : order.payment_status;
 
   const shipping = addressLine(order.shipping_address);
+  const paymentMethodLabel =
+    order.payment_method && isPaymentMethod(order.payment_method)
+      ? PAYMENT_METHOD_LABEL[order.payment_method]
+      : order.payment_method;
+  const deliveryZoneLabel =
+    order.delivery_zone && isDeliveryZone(order.delivery_zone)
+      ? DELIVERY_ZONE_LABEL[order.delivery_zone]
+      : null;
 
   return (
     <div className="space-y-6">
@@ -90,6 +106,11 @@ export default async function OrderDetailPage({
           >
             {paymentLabel}
           </span>
+          {paymentMethodLabel ? (
+            <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-medium text-foreground">
+              {paymentMethodLabel}
+            </span>
+          ) : null}
           <span className="text-sm text-muted-foreground">
             Placed {formatDateTime(order.placed_at)}
           </span>
@@ -214,7 +235,14 @@ export default async function OrderDetailPage({
 
           {/* Shipping address */}
           <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-3 text-base font-semibold">Shipping address</h2>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">Shipping address</h2>
+              {deliveryZoneLabel ? (
+                <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  {deliveryZoneLabel}
+                </span>
+              ) : null}
+            </div>
             {shipping.length > 0 ? (
               <address className="text-sm not-italic leading-relaxed text-muted-foreground">
                 {shipping.map((line, index) => (
