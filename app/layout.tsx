@@ -4,6 +4,7 @@ import { Providers } from "./providers";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Footer } from "@/components/layout/footer";
 import { ConditionalChrome } from "@/components/layout/conditional-chrome";
+import { Preloader } from "@/components/layout/preloader";
 import "./globals.css";
 
 const inter = Inter({
@@ -112,6 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
         <Providers>
+          <Preloader />
           <ConditionalChrome
             header={
               <>

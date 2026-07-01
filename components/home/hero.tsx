@@ -61,7 +61,12 @@ export function Hero() {
         {/* Atmospheric hero photo — sits behind the blobs/grid as the base
             layer. The section's background shows through if it loads slowly or
             fails (graceful, no broken box, no CLS). */}
-        {/* Reduced-motion users get the still poster; everyone else gets the loop. */}
+        {/* Reduced-motion users get the still image; everyone else gets the loop.
+            The video has NO poster on purpose: the heavy dark overlays + glow
+            blobs above make the pre-load state (dark hero) look the same as the
+            playing state, so the video fades in seamlessly instead of swapping
+            from a different poster photo (that "image then video" jump).
+            `preload="auto"` pulls the ~2.6MB clip down as early as possible. */}
         {prefersReduced ? (
           <img
             src={imageUrl(SECTION_IMAGE_IDS.hero, 1600)}
@@ -78,7 +83,7 @@ export function Hero() {
             muted
             loop
             playsInline
-            poster={imageUrl(SECTION_IMAGE_IDS.hero, 1600)}
+            preload="auto"
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover"
           >

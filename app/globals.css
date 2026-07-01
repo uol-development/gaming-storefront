@@ -129,20 +129,39 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
+}
 
-  /*
-    Global reduced-motion safety net. The JS `useReducedMotion` hook swaps
-    Motion variants to opacity-only; this CSS backstops any remaining
-    CSS-driven transitions/animations so nothing transforms when users opt out.
-  */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
+/* Preloader (branded splash) — transform/opacity only. */
+@keyframes loader-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+@keyframes loader-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+/*
+  Global reduced-motion safety net. The JS `useReducedMotion` hook swaps
+  Motion variants to opacity-only; this CSS backstops any remaining
+  CSS-driven transitions/animations so nothing transforms when users opt out.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
