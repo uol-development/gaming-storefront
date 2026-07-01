@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStoreProductsByIds } from "@/lib/data/store";
 import { computeOrderTotals } from "@/lib/data/pricing";
-import { BD_DIVISIONS, BD_PHONE_RE } from "@/lib/data/bd";
+import { BD_PHONE_RE } from "@/lib/data/bd";
 
 /**
  * Public checkout order creation (Bangladesh). Runs on the server and writes the
@@ -29,11 +29,10 @@ const placeOrderSchema = z.object({
   shippingAddress: z.object({
     line1: z.string().trim().min(1),
     area: z.string().trim().min(1),
-    city: z.string().trim().min(1),
-    division: z.enum(BD_DIVISIONS),
+    district: z.string().trim().min(1),
     postal_code: z.string().trim().optional().or(z.literal("")),
   }),
-  deliveryZone: z.enum(["inside_dhaka", "outside_dhaka"]),
+  deliveryZone: z.enum(["inside_dhaka", "dhaka_suburb", "outside_dhaka"]),
   paymentMethod: z.enum(["cod", "bkash", "nagad", "rocket", "card"]),
   paymentRef: z.string().trim().max(120).optional().or(z.literal("")),
   lines: z.array(lineSchema).min(1),
@@ -94,8 +93,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const address = {
     line1: shippingAddress.line1,
     area: shippingAddress.area,
-    city: shippingAddress.city,
-    division: shippingAddress.division,
+    district: shippingAddress.district,
     postal_code: shippingAddress.postal_code ?? "",
     country: "Bangladesh",
   };

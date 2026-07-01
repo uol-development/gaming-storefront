@@ -40,8 +40,9 @@ function addressLine(address: Record<string, unknown>): string[] {
   const l1 = get("line1");
   const l2 = get("line2");
   const area = get("area");
-  // Bangladesh: city (district) + division; legacy US orders: city + state.
-  const cityRegion = [get("city"), get("division") || get("state")].filter(Boolean).join(", ");
+  // Bangladesh: area + district; legacy US orders: city + state.
+  const district = get("district") || get("city");
+  const cityRegion = [district, get("division") || get("state")].filter(Boolean).join(", ");
   const region = [cityRegion, get("postal_code")].filter(Boolean).join(" ");
   return [l1, l2, area, region, get("country")].filter((s) => s.trim().length > 0);
 }

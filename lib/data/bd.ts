@@ -24,20 +24,62 @@ export const BD_PHONE_RE = /^01[3-9]\d{8}$/;
 
 /* -------------------------------- Delivery ------------------------------- */
 
-export type DeliveryZone = "inside_dhaka" | "outside_dhaka";
+export type DeliveryZone = "inside_dhaka" | "dhaka_suburb" | "outside_dhaka";
 
 export const DELIVERY_ZONE_LABEL: Record<DeliveryZone, string> = {
   inside_dhaka: "Inside Dhaka",
+  dhaka_suburb: "Dhaka Sub-area",
   outside_dhaka: "Outside Dhaka",
 };
 
 export function isDeliveryZone(value: string): value is DeliveryZone {
-  return value === "inside_dhaka" || value === "outside_dhaka";
+  return value === "inside_dhaka" || value === "dhaka_suburb" || value === "outside_dhaka";
 }
 
-/** Delivery zone inferred from the division (Dhaka division → inside-Dhaka rate). */
-export function zoneForDivision(division: string): DeliveryZone {
-  return division === "Dhaka" ? "inside_dhaka" : "outside_dhaka";
+/**
+ * Selectable delivery districts, each mapped to a courier zone. "Inside Dhaka"
+ * is Dhaka city proper; the Dhaka-division suburbs (Narayanganj, Gazipur, Savar…)
+ * are a mid-tier "sub-area"; everything else is outside Dhaka.
+ */
+export interface BdArea {
+  name: string;
+  zone: DeliveryZone;
+}
+
+export const BD_AREAS: readonly BdArea[] = [
+  { name: "Dhaka City", zone: "inside_dhaka" },
+  { name: "Savar", zone: "dhaka_suburb" },
+  { name: "Keraniganj", zone: "dhaka_suburb" },
+  { name: "Narayanganj", zone: "dhaka_suburb" },
+  { name: "Gazipur", zone: "dhaka_suburb" },
+  { name: "Tongi", zone: "dhaka_suburb" },
+  { name: "Narsingdi", zone: "dhaka_suburb" },
+  { name: "Munshiganj", zone: "dhaka_suburb" },
+  { name: "Manikganj", zone: "dhaka_suburb" },
+  { name: "Chattogram", zone: "outside_dhaka" },
+  { name: "Sylhet", zone: "outside_dhaka" },
+  { name: "Khulna", zone: "outside_dhaka" },
+  { name: "Rajshahi", zone: "outside_dhaka" },
+  { name: "Barishal", zone: "outside_dhaka" },
+  { name: "Rangpur", zone: "outside_dhaka" },
+  { name: "Mymensingh", zone: "outside_dhaka" },
+  { name: "Cumilla", zone: "outside_dhaka" },
+  { name: "Cox's Bazar", zone: "outside_dhaka" },
+  { name: "Bogura", zone: "outside_dhaka" },
+  { name: "Jashore", zone: "outside_dhaka" },
+  { name: "Dinajpur", zone: "outside_dhaka" },
+  { name: "Other (Outside Dhaka)", zone: "outside_dhaka" },
+] as const;
+
+const AREA_ZONE = new Map<string, DeliveryZone>(BD_AREAS.map((a) => [a.name, a.zone]));
+
+export function isBdArea(name: string): boolean {
+  return AREA_ZONE.has(name);
+}
+
+/** Delivery zone for a selected district/area (defaults to outside-Dhaka). */
+export function zoneForArea(area: string): DeliveryZone {
+  return AREA_ZONE.get(area) ?? "outside_dhaka";
 }
 
 /* -------------------------------- Payments ------------------------------- */

@@ -16,16 +16,16 @@ import type { Product } from "@/lib/data/products";
 import { productGradient } from "@/lib/data/catalog";
 import { computeOrderTotals } from "@/lib/data/pricing";
 import {
-  BD_DIVISIONS,
+  BD_AREAS,
   BD_PHONE_RE,
   DELIVERY_ZONE_LABEL,
   PAYMENT_METHOD_LABEL,
   PAYMENT_OPTIONS,
-  isBdDivision,
+  isBdArea,
   paymentKind,
-  zoneForDivision,
+  zoneForArea,
 } from "@/lib/data/bd";
-import type { BdDivision, PaymentMethod } from "@/lib/data/bd";
+import type { PaymentMethod } from "@/lib/data/bd";
 import { formatPrice } from "@/lib/format";
 import { fade, scaleIn, stepSlide } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
@@ -39,8 +39,8 @@ import { cn } from "@/lib/utils";
  * `fade` when the user prefers reduced motion (stepSlide is a FUNCTION variant
  * and is therefore NOT stripped by `variants()`, so we branch explicitly).
  *
- * The address is fixed to Bangladesh: the division drives the delivery zone
- * (`zoneForDivision`) which in turn drives the shipping fee via
+ * The address is fixed to Bangladesh: the district drives the delivery zone
+ * (`zoneForArea`) which in turn drives the shipping fee via
  * `computeOrderTotals`. Payment is a method selector (COD / bKash / Nagad /
  * Rocket / Card) whose extra fields — and validation — depend on the method's
  * `paymentKind`. All money is in integer minor units (poisha) and only formatted
@@ -66,8 +66,7 @@ type AddressKey =
   | "phone"
   | "line1"
   | "area"
-  | "city"
-  | "division"
+  | "district"
   | "postal";
 type PaymentKey = "cardName" | "cardNumber" | "expiry" | "cvc" | "walletNumber" | "walletTxn";
 type FieldKey = AddressKey | PaymentKey;
@@ -87,8 +86,7 @@ const EMPTY_ADDRESS: Address = {
   phone: "",
   line1: "",
   area: "",
-  city: "",
-  division: "Dhaka",
+  district: "Dhaka City",
   postal: "",
 };
 
@@ -146,8 +144,8 @@ export function CheckoutFlow() {
 
   const idBase = useId();
 
-  // Delivery zone is derived reactively from the chosen division.
-  const zone = zoneForDivision(address.division);
+  // Delivery zone is derived reactively from the chosen district.
+  const zone = zoneForArea(address.district);
 
   /* ---- Order totals for the confirmation recap (minor units throughout) ---- */
   const { total, confirmEmail } = useMemo(() => {
@@ -227,8 +225,8 @@ export function CheckoutFlow() {
         if (!BD_PHONE_RE.test(address.phone.trim())) next.phone = BD_PHONE_MESSAGE;
         if (address.line1.trim().length === 0) next.line1 = "Address is required.";
         if (address.area.trim().length === 0) next.area = "Area / Thana is required.";
-        if (address.city.trim().length === 0) next.city = "City / District is required.";
-        if (!isBdDivision(address.division)) next.division = "Select a division.";
+        if (address.district.trim().length === 0 || !isBdArea(address.district))
+          next.district = "Select your district";
       } else if (current === 1) {
         const kind = paymentKind(payment.method);
         if (kind === "wallet") {
@@ -289,8 +287,7 @@ export function CheckoutFlow() {
         shippingAddress: {
           line1: address.line1.trim(),
           area: address.area.trim(),
-          city: address.city.trim(),
-          division: address.division as BdDivision,
+          district: address.district,
           postal_code: address.postal.trim(),
         },
         deliveryZone: zone,
@@ -549,15 +546,15 @@ interface AddressStepProps {
   idBase: string;
   address: Address;
   errors: Errors;
-  zone: ReturnType<typeof zoneForDivision>;
+  zone: ReturnType<typeof zoneForArea>;
   onChange: (key: AddressKey, value: string) => void;
 }
 
 function AddressStep({ idBase, address, errors, zone, onChange }: AddressStepProps) {
-  const divisionId = `${idBase}-division`;
-  const divisionErrorId = `${divisionId}-error`;
-  const divisionHelpId = `${divisionId}-help`;
-  const divisionInvalid = Boolean(errors.division);
+  const districtId = `${idBase}-district`;
+  const districtErrorId = `${districtId}-error`;
+  const districtHelpId = `${districtId}-help`;
+  const districtInvalid = Boolean(errors.district);
   return (
     <div className="space-y-1">
       <h3 className="text-base font-semibold text-foreground">Shipping address</h3>
@@ -619,56 +616,61 @@ function AddressStep({ idBase, address, errors, zone, onChange }: AddressStepPro
         onChange={(v) => onChange("line1", v)}
       />
 
-      <div className="grid gap-x-4 sm:grid-cols-2">
-        <Field
-          id={`${idBase}-area`}
-          label="Area / Thana"
-          autoComplete="address-level3"
-          placeholder="Gulshan"
-          value={address.area}
-          error={errors.area}
-          onChange={(v) => onChange("area", v)}
-        />
-        <Field
-          id={`${idBase}-city`}
-          label="City / District"
-          autoComplete="address-level2"
-          placeholder="Dhaka"
-          value={address.city}
-          error={errors.city}
-          onChange={(v) => onChange("city", v)}
-        />
-      </div>
+      <Field
+        id={`${idBase}-area`}
+        label="Area / Thana"
+        autoComplete="address-level3"
+        placeholder="Gulshan"
+        value={address.area}
+        error={errors.area}
+        onChange={(v) => onChange("area", v)}
+      />
 
       <div className="grid gap-x-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <label htmlFor={divisionId} className="block text-sm font-medium text-foreground">
-            Division
+          <label htmlFor={districtId} className="block text-sm font-medium text-foreground">
+            District / Delivery area
           </label>
           <select
-            id={divisionId}
-            value={address.division}
-            aria-invalid={divisionInvalid || undefined}
-            aria-describedby={divisionInvalid ? divisionErrorId : divisionHelpId}
-            onChange={(event) => onChange("division", event.target.value)}
+            id={districtId}
+            value={address.district}
+            aria-invalid={districtInvalid || undefined}
+            aria-describedby={districtInvalid ? districtErrorId : districtHelpId}
+            onChange={(event) => onChange("district", event.target.value)}
             className={cn(
               "h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              divisionInvalid ? "border-destructive ring-1 ring-destructive" : "border-border",
+              districtInvalid ? "border-destructive ring-1 ring-destructive" : "border-border",
             )}
           >
-            {BD_DIVISIONS.map((division) => (
-              <option key={division} value={division}>
-                {division}
-              </option>
-            ))}
+            <optgroup label={DELIVERY_ZONE_LABEL.inside_dhaka}>
+              {BD_AREAS.filter((area) => area.zone === "inside_dhaka").map((area) => (
+                <option key={area.name} value={area.name}>
+                  {area.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={DELIVERY_ZONE_LABEL.dhaka_suburb}>
+              {BD_AREAS.filter((area) => area.zone === "dhaka_suburb").map((area) => (
+                <option key={area.name} value={area.name}>
+                  {area.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={DELIVERY_ZONE_LABEL.outside_dhaka}>
+              {BD_AREAS.filter((area) => area.zone === "outside_dhaka").map((area) => (
+                <option key={area.name} value={area.name}>
+                  {area.name}
+                </option>
+              ))}
+            </optgroup>
           </select>
-          {divisionInvalid ? (
-            <p id={divisionErrorId} className="min-h-4 text-xs leading-4 text-destructive">
-              {errors.division ?? ""}
+          {districtInvalid ? (
+            <p id={districtErrorId} className="min-h-4 text-xs leading-4 text-destructive">
+              {errors.district ?? ""}
             </p>
           ) : (
-            <p id={divisionHelpId} className="min-h-4 text-xs leading-4 text-muted-foreground">
+            <p id={districtHelpId} className="min-h-4 text-xs leading-4 text-muted-foreground">
               Delivery: {DELIVERY_ZONE_LABEL[zone]}
             </p>
           )}
@@ -874,9 +876,7 @@ function ReviewStep({ address, payment, rows }: ReviewStepProps) {
             <div className="truncate text-muted-foreground">{address.email || "—"}</div>
             <div className="text-muted-foreground">{address.line1 || "—"}</div>
             <div className="text-muted-foreground">{address.area || "—"}</div>
-            <div className="text-muted-foreground">
-              {[address.city, address.division].filter(Boolean).join(", ") || "—"}
-            </div>
+            <div className="text-muted-foreground">{address.district || "—"}</div>
             <div className="text-muted-foreground">Bangladesh</div>
           </dl>
         </section>

@@ -12,7 +12,8 @@ import type { DeliveryZone } from "@/lib/data/bd";
  */
 
 export const INSIDE_DHAKA_FEE = 6_000; // ৳60
-export const OUTSIDE_DHAKA_FEE = 12_000; // ৳120
+export const DHAKA_SUBURB_FEE = 10_000; // ৳100
+export const OUTSIDE_DHAKA_FEE = 13_000; // ৳130
 /** Free delivery at/above this subtotal (minor units) = ৳1,50,000. */
 export const FREE_SHIPPING_THRESHOLD = 15_000_000;
 
@@ -25,7 +26,9 @@ export interface OrderTotals {
 
 export function shippingForZone(subtotal: number, zone: DeliveryZone): number {
   if (subtotal >= FREE_SHIPPING_THRESHOLD) return 0;
-  return zone === "inside_dhaka" ? INSIDE_DHAKA_FEE : OUTSIDE_DHAKA_FEE;
+  if (zone === "inside_dhaka") return INSIDE_DHAKA_FEE;
+  if (zone === "dhaka_suburb") return DHAKA_SUBURB_FEE;
+  return OUTSIDE_DHAKA_FEE;
 }
 
 export function computeOrderTotals(subtotal: number, zone: DeliveryZone): OrderTotals {
