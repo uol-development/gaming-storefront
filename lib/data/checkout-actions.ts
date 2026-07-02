@@ -4,6 +4,8 @@ import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStoreProductsByIds } from "@/lib/data/store";
 import { computeOrderTotals } from "@/lib/data/pricing";
+import { getStoreSettings } from "@/lib/data/settings-read";
+import { enabledPaymentMethods, toShippingConfig } from "@/lib/data/settings";
 import { BD_PHONE_RE } from "@/lib/data/bd";
 
 /**
@@ -59,6 +61,14 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   }
   const { customer, shippingAddress, deliveryZone, paymentMethod, paymentRef, lines } = parsed.data;
 
+  // Admin-configured store settings drive delivery rates + which payment methods
+  // are accepted (resilient: falls back to built-in defaults if unset).
+  const settings = await getStoreSettings();
+  if (!enabledPaymentMethods(settings).includes(paymentMethod)) {
+    return { ok: false, error: "That payment method isn't available right now." };
+  }
+  const shippingConfig = toShippingConfig(settings);
+
   // Authoritative product data — never trust client-sent prices.
   const ids = Array.from(new Set(lines.map((l) => l.productId)));
   const products = await getStoreProductsByIds(ids);
@@ -86,7 +96,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   }
 
   const subtotal = items.reduce((sum, it) => sum + it.line_total, 0);
-  const totals = computeOrderTotals(subtotal, deliveryZone);
+  const totals = computeOrderTotals(subtotal, deliveryZone, shippingConfig);
   const paymentStatus = paymentMethod === "cod" ? "unpaid" : "paid";
 
   const address = {

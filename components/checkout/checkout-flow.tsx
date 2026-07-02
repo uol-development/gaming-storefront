@@ -14,7 +14,7 @@ import { getStoreProductsByIdsAction } from "@/lib/data/store-actions";
 import { placeOrder as placeOrderAction } from "@/lib/data/checkout-actions";
 import type { Product } from "@/lib/data/products";
 import { productGradient } from "@/lib/data/catalog";
-import { computeOrderTotals } from "@/lib/data/pricing";
+import { computeOrderTotals, DEFAULT_SHIPPING_CONFIG, type ShippingConfig } from "@/lib/data/pricing";
 import {
   BD_AREAS,
   BD_PHONE_RE,
@@ -25,7 +25,7 @@ import {
   paymentKind,
   zoneForArea,
 } from "@/lib/data/bd";
-import type { PaymentMethod } from "@/lib/data/bd";
+import type { PaymentMethod, PaymentOption } from "@/lib/data/bd";
 import { formatPrice } from "@/lib/format";
 import { fade, scaleIn, stepSlide } from "@/lib/animations/variants";
 import { useReducedMotion } from "@/lib/animations/use-reduced-motion";
@@ -90,13 +90,33 @@ const EMPTY_PAYMENT: PaymentState = {
   walletTxn: "",
 };
 
-export function CheckoutFlow() {
+export function CheckoutFlow({
+  shipping = DEFAULT_SHIPPING_CONFIG,
+  enabledPayments,
+}: {
+  shipping?: ShippingConfig;
+  enabledPayments?: PaymentMethod[];
+} = {}) {
   const router = useRouter();
   const toast = useToast();
   const { prefersReduced } = useReducedMotion();
 
   const lines = useCartStore((s) => s.lines);
   const clear = useCartStore((s) => s.clear);
+
+  // Enabled payment methods (from Store Settings) drive which options render and
+  // the initial selection. Never empty — falls back to COD.
+  const enabledMethods = useMemo<PaymentMethod[]>(() => {
+    const all = PAYMENT_OPTIONS.map((o) => o.value);
+    const list = (enabledPayments && enabledPayments.length > 0 ? enabledPayments : all).filter(
+      (m): m is PaymentMethod => all.includes(m),
+    );
+    return list.length > 0 ? list : ["cod"];
+  }, [enabledPayments]);
+  const paymentOptions = useMemo(
+    () => PAYMENT_OPTIONS.filter((o) => enabledMethods.includes(o.value)),
+    [enabledMethods],
+  );
 
   // Resolve cart line ids to real DB products (client components never touch the
   // server-only data layer directly). `null` = not yet loaded.
@@ -129,7 +149,10 @@ export function CheckoutFlow() {
   const [orderNumber, setOrderNumber] = useState("");
 
   const [address, setAddress] = useState<Address>(EMPTY_ADDRESS);
-  const [payment, setPayment] = useState<PaymentState>(EMPTY_PAYMENT);
+  const [payment, setPayment] = useState<PaymentState>(() => ({
+    ...EMPTY_PAYMENT,
+    method: enabledMethods[0] ?? "cod",
+  }));
   const [errors, setErrors] = useState<Errors>({});
 
   const idBase = useId();
@@ -147,8 +170,11 @@ export function CheckoutFlow() {
         subtotal += product.price * line.quantity;
       }
     }
-    return { total: computeOrderTotals(subtotal, zone).total, confirmEmail: address.email };
-  }, [lines, productsById, address.email, zone]);
+    return {
+      total: computeOrderTotals(subtotal, zone, shipping).total,
+      confirmEmail: address.email,
+    };
+  }, [lines, productsById, address.email, zone, shipping]);
 
   /* ---- Review-step line items (resolve ids -> products, skip stale) ---- */
   const reviewRows = useMemo(() => {
@@ -428,6 +454,7 @@ export function CheckoutFlow() {
                 idBase={idBase}
                 payment={payment}
                 errors={errors}
+                options={paymentOptions}
                 onChange={setPaymentField}
                 onMethodChange={setPaymentMethod}
               />
@@ -456,7 +483,7 @@ export function CheckoutFlow() {
       {/* RIGHT: sticky order summary */}
       <aside className="min-w-0">
         <div className="lg:sticky lg:top-24">
-          <OrderSummary zone={zone} />
+          <OrderSummary zone={zone} shippingConfig={shipping} />
         </div>
       </aside>
     </div>
@@ -667,11 +694,12 @@ interface PaymentStepProps {
   idBase: string;
   payment: PaymentState;
   errors: Errors;
+  options: readonly PaymentOption[];
   onChange: (key: PaymentKey, value: string) => void;
   onMethodChange: (method: PaymentMethod) => void;
 }
 
-function PaymentStep({ idBase, payment, errors, onChange, onMethodChange }: PaymentStepProps) {
+function PaymentStep({ idBase, payment, errors, options, onChange, onMethodChange }: PaymentStepProps) {
   const kind = paymentKind(payment.method);
   const walletLabel = PAYMENT_METHOD_LABEL[payment.method];
   return (
@@ -684,7 +712,7 @@ function PaymentStep({ idBase, payment, errors, onChange, onMethodChange }: Paym
       <fieldset className="space-y-3">
         <legend className="sr-only">Payment method</legend>
         <div className="grid gap-3 sm:grid-cols-2">
-          {PAYMENT_OPTIONS.map((option) => {
+          {options.map((option) => {
             const selected = payment.method === option.value;
             const optionId = `${idBase}-pm-${option.value}`;
             return (

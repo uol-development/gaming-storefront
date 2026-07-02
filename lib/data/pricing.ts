@@ -17,6 +17,26 @@ export const OUTSIDE_DHAKA_FEE = 13_000; // ৳130
 /** Free delivery at/above this subtotal (minor units) = ৳1,50,000. */
 export const FREE_SHIPPING_THRESHOLD = 15_000_000;
 
+/**
+ * Per-zone delivery rates + free-shipping threshold (all in minor units). These
+ * are admin-editable via Store Settings; the constants above are the built-in
+ * defaults used whenever settings are unset/unavailable, so the money path is
+ * never left without valid numbers.
+ */
+export interface ShippingConfig {
+  insideDhaka: number;
+  dhakaSuburb: number;
+  outsideDhaka: number;
+  freeThreshold: number;
+}
+
+export const DEFAULT_SHIPPING_CONFIG: ShippingConfig = {
+  insideDhaka: INSIDE_DHAKA_FEE,
+  dhakaSuburb: DHAKA_SUBURB_FEE,
+  outsideDhaka: OUTSIDE_DHAKA_FEE,
+  freeThreshold: FREE_SHIPPING_THRESHOLD,
+};
+
 export interface OrderTotals {
   subtotal: number;
   shipping: number;
@@ -24,15 +44,23 @@ export interface OrderTotals {
   total: number;
 }
 
-export function shippingForZone(subtotal: number, zone: DeliveryZone): number {
-  if (subtotal >= FREE_SHIPPING_THRESHOLD) return 0;
-  if (zone === "inside_dhaka") return INSIDE_DHAKA_FEE;
-  if (zone === "dhaka_suburb") return DHAKA_SUBURB_FEE;
-  return OUTSIDE_DHAKA_FEE;
+export function shippingForZone(
+  subtotal: number,
+  zone: DeliveryZone,
+  config: ShippingConfig = DEFAULT_SHIPPING_CONFIG,
+): number {
+  if (subtotal >= config.freeThreshold) return 0;
+  if (zone === "inside_dhaka") return config.insideDhaka;
+  if (zone === "dhaka_suburb") return config.dhakaSuburb;
+  return config.outsideDhaka;
 }
 
-export function computeOrderTotals(subtotal: number, zone: DeliveryZone): OrderTotals {
-  const shipping = shippingForZone(subtotal, zone);
+export function computeOrderTotals(
+  subtotal: number,
+  zone: DeliveryZone,
+  config: ShippingConfig = DEFAULT_SHIPPING_CONFIG,
+): OrderTotals {
+  const shipping = shippingForZone(subtotal, zone, config);
   const tax = 0; // prices are VAT-inclusive
   return { subtotal, shipping, tax, total: subtotal + shipping };
 }

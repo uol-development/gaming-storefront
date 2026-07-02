@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import { Providers } from "./providers";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Footer } from "@/components/layout/footer";
+import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
 import { ConditionalChrome } from "@/components/layout/conditional-chrome";
 import { Preloader } from "@/components/layout/preloader";
 import "./globals.css";
@@ -123,6 +124,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 >
                   Skip to content
                 </a>
+                <MaintenanceBanner />
                 <SiteHeader />
               </>
             }

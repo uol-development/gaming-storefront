@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
 import { productGradient, productImageUrl } from "@/lib/data/catalog";
 import { getStoreProductsByIdsAction } from "@/lib/data/store-actions";
-import { computeOrderTotals } from "@/lib/data/pricing";
+import { computeOrderTotals, DEFAULT_SHIPPING_CONFIG, type ShippingConfig } from "@/lib/data/pricing";
 import { DELIVERY_ZONE_LABEL } from "@/lib/data/bd";
 import type { DeliveryZone } from "@/lib/data/bd";
 import type { Product } from "@/lib/data/products";
@@ -34,7 +34,13 @@ interface SummaryRow {
   lineTotal: number;
 }
 
-export function OrderSummary({ zone }: { zone: DeliveryZone }) {
+export function OrderSummary({
+  zone,
+  shippingConfig = DEFAULT_SHIPPING_CONFIG,
+}: {
+  zone: DeliveryZone;
+  shippingConfig?: ShippingConfig;
+}) {
   const lines = useCartStore((s) => s.lines);
 
   // Resolved products keyed by id. `null` = not yet loaded (loading state).
@@ -93,7 +99,7 @@ export function OrderSummary({ zone }: { zone: DeliveryZone }) {
     return { rows: resolved, subtotal: sum };
   }, [lines, productsById]);
 
-  const { shipping, total } = computeOrderTotals(subtotal, zone);
+  const { shipping, total } = computeOrderTotals(subtotal, zone, shippingConfig);
 
   return (
     <section

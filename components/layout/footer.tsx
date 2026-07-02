@@ -1,14 +1,15 @@
 import Link from "next/link";
-import { Github, Instagram, Twitch, Twitter, Youtube, type LucideIcon } from "lucide-react";
+import { Facebook, Instagram, Music2, Twitter, Youtube, type LucideIcon } from "lucide-react";
+import { getStoreSettings } from "@/lib/data/settings-read";
+import { enabledPaymentMethods } from "@/lib/data/settings";
 
 /**
- * Site footer. A static, server-rendered surface — no client state or motion is
- * needed, so this stays a Server Component (zero JS shipped). Every internal
- * link follows the no-404 convention: category/shop links resolve to the PLP at
- * `/products` with query params it understands; support/company/legal links
- * resolve to real content routes; social links point to external profiles.
- * Layout is a fixed multi-column grid that collapses to a single stacked column
- * on mobile, so nothing reflows after hydration (no CLS).
+ * Site footer. A server-rendered surface (zero JS shipped) that now reads live
+ * store settings: brand name/tagline, social links, contact, and the accepted
+ * payment badges all come from admin-configured settings (with safe defaults).
+ * Every internal link follows the no-404 convention; social links render only
+ * when configured. Layout is a fixed grid that collapses to one column on
+ * mobile, so nothing reflows after hydration (no CLS).
  */
 
 interface FooterLink {
@@ -57,33 +58,41 @@ const COMPANY_LINKS: FooterColumn = {
 
 const LINK_COLUMNS: FooterColumn[] = [SHOP_LINKS, SUPPORT_LINKS, COMPANY_LINKS];
 
-const SOCIAL_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
-  { label: "NEXUS on Twitter", href: "https://twitter.com", icon: Twitter },
-  { label: "NEXUS on YouTube", href: "https://www.youtube.com", icon: Youtube },
-  { label: "NEXUS on Twitch", href: "https://www.twitch.tv", icon: Twitch },
-  { label: "NEXUS on Instagram", href: "https://www.instagram.com", icon: Instagram },
-  { label: "NEXUS on GitHub", href: "https://github.com", icon: Github },
-];
-
 const LEGAL_LINKS: FooterLink[] = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
   { label: "Cookies", href: "/cookies" },
 ];
 
-const PAYMENT_METHODS = [
-  "bKash",
-  "Nagad",
-  "Rocket",
-  "Cash on Delivery",
-  "Visa",
-  "Mastercard",
-] as const;
+const PAYMENT_BADGE_LABELS: Record<string, string[]> = {
+  cod: ["Cash on Delivery"],
+  bkash: ["bKash"],
+  nagad: ["Nagad"],
+  rocket: ["Rocket"],
+  card: ["Visa", "Mastercard"],
+};
 
 const linkClass =
   "rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-export function Footer() {
+const isHttp = (url: string): boolean => /^https?:\/\//i.test(url.trim());
+
+export async function Footer() {
+  const settings = await getStoreSettings();
+  const { store, social } = settings;
+
+  const socials: { label: string; href: string; icon: LucideIcon }[] = [
+    { label: `${store.name} on Facebook`, href: social.facebook, icon: Facebook },
+    { label: `${store.name} on Instagram`, href: social.instagram, icon: Instagram },
+    { label: `${store.name} on YouTube`, href: social.youtube, icon: Youtube },
+    { label: `${store.name} on TikTok`, href: social.tiktok, icon: Music2 },
+    { label: `${store.name} on X`, href: social.x, icon: Twitter },
+  ].filter((s) => isHttp(s.href));
+
+  const paymentBadges = Array.from(
+    new Set(enabledPaymentMethods(settings).flatMap((m) => PAYMENT_BADGE_LABELS[m] ?? [])),
+  );
+
   return (
     <footer className="border-t border-border bg-card">
       <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
@@ -92,42 +101,57 @@ export function Footer() {
           <div className="lg:col-span-4">
             <Link
               href="/"
-              aria-label="NEXUS home"
+              aria-label={`${store.name} home`}
               className="inline-flex items-center gap-2 rounded-md font-display text-lg font-bold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">
-                N
+                {store.name.charAt(0).toUpperCase() || "N"}
               </span>
-              <span>NEXUS</span>
+              <span>{store.name}</span>
             </Link>
 
-            <p className="mt-4 max-w-xs text-sm text-muted-foreground">
-              Premium gaming gear, hand-picked rigs, and battle-tested peripherals — built for
-              players who refuse to lose to their hardware.
-            </p>
+            <p className="mt-4 max-w-xs text-sm text-muted-foreground">{store.tagline}</p>
 
-            <ul className="mt-6 flex items-center gap-2">
-              {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
-                <li key={label}>
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className="grid size-9 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Icon className="size-4" aria-hidden />
-                  </a>
-                </li>
-              ))}
-            </ul>
+            {store.supportEmail || store.supportPhone ? (
+              <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
+                {store.supportEmail ? (
+                  <li>
+                    <a href={`mailto:${store.supportEmail}`} className={linkClass}>
+                      {store.supportEmail}
+                    </a>
+                  </li>
+                ) : null}
+                {store.supportPhone ? (
+                  <li>
+                    <a href={`tel:${store.supportPhone.replace(/\s+/g, "")}`} className={linkClass}>
+                      {store.supportPhone}
+                    </a>
+                  </li>
+                ) : null}
+              </ul>
+            ) : null}
+
+            {socials.length > 0 ? (
+              <ul className="mt-6 flex items-center gap-2">
+                {socials.map(({ label, href, icon: Icon }) => (
+                  <li key={label}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={label}
+                      className="grid size-9 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Icon className="size-4" aria-hidden />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
 
           {/* Link columns */}
-          <nav
-            aria-label="Footer"
-            className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-5"
-          >
+          <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-5">
             {LINK_COLUMNS.map((column) => (
               <div key={column.heading}>
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
@@ -167,7 +191,7 @@ export function Footer() {
         <div className="mt-12 flex flex-col gap-6 border-t border-border pt-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} NEXUS. All rights reserved.
+              &copy; {new Date().getFullYear()} {store.name}. All rights reserved.
             </p>
             <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {LEGAL_LINKS.map((link) => (
@@ -180,16 +204,18 @@ export function Footer() {
             </ul>
           </div>
 
-          <ul aria-label="Accepted payment methods" className="flex flex-wrap items-center gap-2">
-            {PAYMENT_METHODS.map((method) => (
-              <li
-                key={method}
-                className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground"
-              >
-                {method}
-              </li>
-            ))}
-          </ul>
+          {paymentBadges.length > 0 ? (
+            <ul aria-label="Accepted payment methods" className="flex flex-wrap items-center gap-2">
+              {paymentBadges.map((method) => (
+                <li
+                  key={method}
+                  className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                >
+                  {method}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
     </footer>
