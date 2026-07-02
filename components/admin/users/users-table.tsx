@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Loader2,
   Search,
+  Trash2,
   UserCheck,
   UserX,
   Users,
@@ -28,10 +29,11 @@ import type { AdminUserRow } from "@/lib/admin/users-queries";
 import {
   setUsersRole,
   setUsersSuspended,
+  deleteUsers,
   type ActionResult,
 } from "@/lib/admin/users-actions";
 import {
-  PROFILE_ROLES,
+  ASSIGNABLE_ROLES,
   ROLE_LABEL,
   ROLE_BADGE,
   canActorTouchRole,
@@ -337,6 +339,20 @@ export function UsersTable({
     void runAction("reactivate the users", () => setUsersSuspended(selectedIds, false), true);
   }
 
+  function handleDeleteRow(row: AdminUserRow) {
+    if (working) return;
+    if (!window.confirm(`Permanently delete ${row.email}? This can't be undone.`)) return;
+    void runAction("delete the user", () => deleteUsers([row.id]), false);
+  }
+
+  function handleBulkDelete() {
+    if (working || selectedIds.length === 0) return;
+    if (!window.confirm(`Permanently delete ${selectedIds.length} user(s)? This can't be undone.`)) {
+      return;
+    }
+    void runAction("delete the users", () => deleteUsers(selectedIds), true);
+  }
+
   const rangeStart = total === 0 ? 0 : (page - 1) * perPage + 1;
   const rangeEnd = Math.min(total, (page - 1) * perPage + rows.length);
 
@@ -380,7 +396,7 @@ export function UsersTable({
               className="h-9 rounded-md border border-border bg-card px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="">All roles</option>
-              {PROFILE_ROLES.map((r) => (
+              {ASSIGNABLE_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {ROLE_LABEL[r]} ({counts[r] ?? 0})
                 </option>
@@ -466,6 +482,15 @@ export function UsersTable({
             >
               <UserCheck className="size-3.5" />
               Reactivate
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={working}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2.5 text-xs font-medium text-destructive hover:bg-destructive/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <Trash2 className="size-3.5" />
+              Delete
             </button>
           </div>
         </div>
@@ -558,6 +583,11 @@ export function UsersTable({
                   const isSelf = row.id === currentUserId;
                   const canTouch = !isSelf && canActorTouchRole(actorRole, row.role);
                   const isSelected = selected.has(row.id);
+                  // Offer the assignable roles; if this row still holds a legacy
+                  // role, prepend it so the select shows the correct value.
+                  const roleOptions = ASSIGNABLE_ROLES.includes(row.role)
+                    ? ASSIGNABLE_ROLES
+                    : [row.role, ...ASSIGNABLE_ROLES];
                   return (
                     <tr
                       key={row.id}
@@ -612,7 +642,7 @@ export function UsersTable({
                             ROLE_BADGE[row.role],
                           )}
                         >
-                          {PROFILE_ROLES.map((optionRole) => (
+                          {roleOptions.map((optionRole) => (
                             <option
                               key={optionRole}
                               value={optionRole}
@@ -652,6 +682,16 @@ export function UsersTable({
                               Suspend
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRow(row)}
+                            disabled={!canTouch || working}
+                            aria-label={`Delete ${row.email}`}
+                            title="Delete permanently"
+                            className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>

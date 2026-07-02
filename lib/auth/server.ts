@@ -1,7 +1,16 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type UserRole = "super_admin" | "admin" | "manager" | "staff" | "editor" | "support";
+export type UserRole =
+  | "super_admin"
+  | "admin"
+  | "manager"
+  | "staff"
+  | "editor"
+  | "support"
+  | "warehouse"
+  | "seo"
+  | "call_agent";
 
 export interface AdminProfile {
   id: string;
@@ -12,7 +21,17 @@ export interface AdminProfile {
   is_suspended: boolean;
 }
 
-const STAFF_ROLES: UserRole[] = ["super_admin", "admin", "manager", "staff", "editor", "support"];
+const STAFF_ROLES: UserRole[] = [
+  "super_admin",
+  "admin",
+  "manager",
+  "staff",
+  "editor",
+  "support",
+  "warehouse",
+  "seo",
+  "call_agent",
+];
 
 /** The signed-in user's profile, or null if not authenticated. */
 export async function getCurrentProfile(): Promise<AdminProfile | null> {
@@ -41,26 +60,32 @@ export async function requireStaff(): Promise<AdminProfile> {
   return profile;
 }
 
-/** Capability helpers for RBAC gating in the UI / actions. */
+/**
+ * Capability helpers for RBAC gating in the UI / actions. Business roles:
+ *   warehouse  → inventory + orders (fulfilment)
+ *   seo        → products, categories, videos, banners (content/SEO)
+ *   call_agent → orders, customers, reviews (support desk)
+ * The legacy editor/support roles keep their old access for back-compat.
+ */
 export const can = {
   manageProducts: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "editor"].includes(role),
+    ["super_admin", "admin", "manager", "editor", "seo"].includes(role),
   manageCategories: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "editor"].includes(role),
+    ["super_admin", "admin", "manager", "editor", "seo"].includes(role),
   manageOrders: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "support"].includes(role),
+    ["super_admin", "admin", "manager", "support", "warehouse", "call_agent"].includes(role),
   manageCustomers: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "support"].includes(role),
+    ["super_admin", "admin", "manager", "support", "call_agent"].includes(role),
   manageInventory: (role: UserRole) =>
-    ["super_admin", "admin", "manager"].includes(role),
+    ["super_admin", "admin", "manager", "warehouse"].includes(role),
   manageVideos: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "editor"].includes(role),
+    ["super_admin", "admin", "manager", "editor", "seo"].includes(role),
   manageSubscribers: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "editor"].includes(role),
+    ["super_admin", "admin", "manager", "editor", "seo"].includes(role),
   manageBanners: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "editor"].includes(role),
+    ["super_admin", "admin", "manager", "editor", "seo"].includes(role),
   manageReviews: (role: UserRole) =>
-    ["super_admin", "admin", "manager", "support"].includes(role),
+    ["super_admin", "admin", "manager", "support", "call_agent"].includes(role),
   manageUsers: (role: UserRole) => ["super_admin", "admin"].includes(role),
   manageSettings: (role: UserRole) => ["super_admin", "admin"].includes(role),
   delete: (role: UserRole) => ["super_admin", "admin", "manager"].includes(role),

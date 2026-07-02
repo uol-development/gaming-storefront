@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile, can, type AdminProfile } from "@/lib/auth/server";
 import { logAudit } from "@/lib/admin/audit";
 import {
+  ASSIGNABLE_ROLES,
   ROLE_LABEL,
   canActorTouchRole,
   isProfileRole,
@@ -195,4 +197,149 @@ export async function setUsersSuspended(ids: string[], suspended: boolean): Prom
   });
   revalidatePath("/admin/users");
   return { ok: true };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Create + delete accounts (service-role auth admin API)                     */
+/* -------------------------------------------------------------------------- */
+
+const addUserSchema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
+  fullName: z.string().trim().min(1, "Name is required").max(120),
+  role: z.string(),
+  password: z.string().min(8, "Password must be at least 8 characters").max(72),
+});
+
+export type AddUserInput = z.input<typeof addUserSchema>;
+
+export interface AddUserResult extends ActionResult {
+  userId?: string;
+}
+
+/**
+ * Create a staff (or customer) account directly from the admin panel. The admin
+ * sets a temporary password and the account is confirmed immediately (no email
+ * needed) so the new member can sign in and change it. Gated by
+ * requireManageUsers + the actor's assign-role permission.
+ */
+export async function addUser(input: AddUserInput): Promise<AddUserResult> {
+  const actor = await requireManageUsers();
+
+  const parsed = addUserSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const { email, fullName, role, password } = parsed.data;
+
+  if (!isProfileRole(role) || !ASSIGNABLE_ROLES.includes(role)) {
+    return { ok: false, error: "Unknown role." };
+  }
+  if (!canActorTouchRole(actor.role, role)) {
+    return { ok: false, error: `You don't have permission to assign the ${ROLE_LABEL[role]} role.` };
+  }
+
+  const admin = createSupabaseAdminClient();
+  try {
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    });
+    if (error || !data?.user) {
+      const msg = error?.message ?? "Could not create the user.";
+      return {
+        ok: false,
+        error: /already|exists|registered|duplicate/i.test(msg)
+          ? "A user with that email already exists."
+          : msg,
+      };
+    }
+
+    // The on_auth_user_created trigger seeds a 'customer' profile; upsert the
+    // chosen role + name so it's correct regardless of trigger timing.
+    const userId = data.user.id;
+    const { error: profileError } = await admin
+      .from("profiles")
+      .upsert({ id: userId, email, full_name: fullName, role }, { onConflict: "id" });
+    if (profileError) {
+      // Roll back the half-created account so the email isn't left taken by an
+      // orphaned (customer-role) user that also blocks a retry.
+      await admin.auth.admin.deleteUser(userId).catch(() => undefined);
+      return { ok: false, error: profileError.message };
+    }
+
+    await logAudit({
+      action: "create",
+      entity: "user",
+      entityId: userId,
+      summary: `Created ${ROLE_LABEL[role]} account ${email}`,
+    });
+    revalidatePath("/admin/users");
+    return { ok: true, userId };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to create the user." };
+  }
+}
+
+/**
+ * Permanently delete accounts (removes the auth user; the profile cascades).
+ * Same privilege guards as a role change, plus the last-active-super-admin
+ * lockout guard evaluated across the batch.
+ */
+export async function deleteUsers(ids: string[]): Promise<ActionResult> {
+  const actor = await requireManageUsers();
+  if (ids.length === 0) return { ok: true };
+
+  const admin = createSupabaseAdminClient();
+  try {
+    const targets = await loadTargets(admin, ids);
+    if (targets.length === 0) return { ok: false, error: "No matching users." };
+
+    for (const target of targets) {
+      if (target.id === actor.id) {
+        return { ok: false, error: "You can't delete your own account." };
+      }
+      if (!canActorTouchRole(actor.role, target.role)) {
+        return { ok: false, error: `You don't have permission to delete a ${ROLE_LABEL[target.role]}.` };
+      }
+    }
+
+    // Deleting an active super admin removes them — guard against zeroing out.
+    const removed = targets.filter((t) => t.role === "super_admin" && !t.is_suspended).length;
+    if (removed > 0) {
+      const activeSuperAdmins = await countActiveSuperAdmins(admin);
+      if (activeSuperAdmins - removed < 1) {
+        return { ok: false, error: "There must be at least one active super admin." };
+      }
+    }
+
+    // Delete one at a time (no bulk auth API). Keep going on error and report an
+    // aggregate so a mid-batch failure doesn't hide what actually got deleted.
+    const failed: string[] = [];
+    let deleted = 0;
+    for (const target of targets) {
+      const { error } = await admin.auth.admin.deleteUser(target.id);
+      if (error) failed.push(target.email ?? target.id);
+      else deleted += 1;
+    }
+
+    if (deleted > 0) {
+      await logAudit({
+        action: "delete",
+        entity: "user",
+        summary: `Deleted ${deleted} ${plural(deleted)}`,
+      });
+      revalidatePath("/admin/users");
+    }
+
+    if (failed.length > 0) {
+      const shown = failed.slice(0, 3).join(", ");
+      const more = failed.length > 3 ? `, +${failed.length - 3} more` : "";
+      return { ok: false, error: `Deleted ${deleted}. Couldn't delete ${failed.length} (${shown}${more}).` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to delete users." };
+  }
 }

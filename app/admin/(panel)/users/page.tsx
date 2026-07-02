@@ -2,6 +2,7 @@ import { getCurrentProfile } from "@/lib/auth/server";
 import { listUsers, userRoleCounts, type UserSort } from "@/lib/admin/users-queries";
 import { STAFF_ROLES } from "@/lib/admin/users-schema";
 import { UsersTable } from "@/components/admin/users/users-table";
+import { AddUserDialog } from "@/components/admin/users/add-user-dialog";
 
 export const metadata = { title: "Users & Roles" };
 export const dynamic = "force-dynamic";
@@ -48,12 +49,15 @@ export default async function UsersPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-2xl font-bold tracking-tight">Users &amp; Roles</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {staffTotal.toLocaleString("en-US")} staff · {customerTotal.toLocaleString("en-US")}{" "}
-          {customerTotal === 1 ? "customer" : "customers"} · manage access &amp; permissions
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Users &amp; Roles</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {staffTotal.toLocaleString("en-US")} staff · {customerTotal.toLocaleString("en-US")}{" "}
+            {customerTotal === 1 ? "customer" : "customers"} · manage access &amp; permissions
+          </p>
+        </div>
+        <AddUserDialog actorRole={profile?.role ?? "admin"} />
       </header>
 
       <UsersTable
