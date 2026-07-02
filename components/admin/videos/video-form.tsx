@@ -240,7 +240,6 @@ function VideoPreview({
           />
         ) : thumbSrc ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={thumbSrc}
               alt="Video thumbnail"

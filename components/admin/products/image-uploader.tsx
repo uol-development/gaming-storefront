@@ -95,7 +95,6 @@ export function ImageUploader({ value, onChange, label = "Image" }: ImageUploade
 
       {value ? (
         <div className="group relative overflow-hidden rounded-xl border border-border bg-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
             alt="Selected product image preview"
