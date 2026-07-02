@@ -10,7 +10,9 @@ import {
 } from "@/lib/data/store";
 import { formatCompact, stockStatus } from "@/lib/format";
 import { getProductVideos } from "@/lib/data/videos";
+import { getProductReviews } from "@/lib/data/reviews";
 import { ProductGallery } from "@/components/product/product-gallery";
+import { ProductReviews } from "@/components/product/product-reviews";
 import { SpecAccordion } from "@/components/product/spec-accordion";
 import { StickyBuyPanel } from "@/components/product/sticky-buy-panel";
 import { ProductCard } from "@/components/product/product-card";
@@ -48,9 +50,10 @@ export default async function ProductDetailPage({
   if (!product) notFound();
 
   const specGroups = productSpecGroups(product);
-  const [related, productVideos] = await Promise.all([
+  const [related, productVideos, reviews] = await Promise.all([
     getStoreRelated(product),
     getProductVideos(product.id),
+    getProductReviews(product.id),
   ]);
   const availability = stockStatus(product.stock);
   const availabilityDotClass =
@@ -74,11 +77,16 @@ export default async function ProductDetailPage({
     sku: product.id,
     brand: { "@type": "Brand", name: product.brand },
     image: [productImageUrl(product, 1200)],
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviews,
-    },
+    // Only emit AggregateRating when there are actually reviews (0 reviews is invalid schema).
+    ...(product.reviews > 0 && product.rating > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating,
+            reviewCount: product.reviews,
+          },
+        }
+      : {}),
     offers: {
       "@type": "Offer",
       price: (product.price / 100).toFixed(2),
@@ -184,6 +192,14 @@ export default async function ProductDetailPage({
           <StickyBuyPanel product={product} />
         </div>
       </div>
+
+      {/* Reviews */}
+      <ProductReviews
+        productId={product.id}
+        productName={product.name}
+        summary={reviews.summary}
+        reviews={reviews.reviews}
+      />
 
       {/* Videos featuring this product */}
       {productVideos.length > 0 ? (

@@ -49,7 +49,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
       { label: "Products", href: "/admin/products", icon: Package, ready: true },
       { label: "Categories", href: "/admin/categories", icon: Tag, ready: true },
       { label: "Inventory", href: "/admin/inventory", icon: Boxes, ready: true },
-      { label: "Reviews", href: "/admin/reviews", icon: Star },
+      { label: "Reviews", href: "/admin/reviews", icon: Star, ready: true },
     ],
   },
   {
