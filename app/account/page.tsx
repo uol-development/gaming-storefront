@@ -145,7 +145,14 @@ async function AccountContent({
               <tbody>
                 {orders.map((order) => (
                   <tr key={order.id} className="border-b border-border last:border-0">
-                    <td className="px-5 py-3 font-medium text-foreground">{order.order_number}</td>
+                    <td className="px-5 py-3 font-medium text-foreground">
+                      <Link
+                        href={`/account/orders/${order.id}`}
+                        className="rounded text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {order.order_number}
+                      </Link>
+                    </td>
                     <td className="px-3 py-3">
                       <span
                         className={cn(
