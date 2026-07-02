@@ -88,5 +88,6 @@ export const can = {
     ["super_admin", "admin", "manager", "support", "call_agent"].includes(role),
   manageUsers: (role: UserRole) => ["super_admin", "admin"].includes(role),
   manageSettings: (role: UserRole) => ["super_admin", "admin"].includes(role),
+  viewReports: (role: UserRole) => ["super_admin", "admin", "manager"].includes(role),
   delete: (role: UserRole) => ["super_admin", "admin", "manager"].includes(role),
 };

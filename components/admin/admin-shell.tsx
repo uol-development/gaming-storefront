@@ -74,7 +74,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
   {
     heading: "System",
     items: [
-      { label: "Reports", href: "/admin/reports", icon: BarChart3 },
+      { label: "Reports", href: "/admin/reports", icon: BarChart3, ready: true },
       { label: "Users & Roles", href: "/admin/users", icon: Users, ready: true },
       { label: "Settings", href: "/admin/settings", icon: Settings, ready: true },
     ],
